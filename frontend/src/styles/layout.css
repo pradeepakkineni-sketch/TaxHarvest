@@ -58,6 +58,22 @@
 .analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .analysis-card { padding: 12px; border: 1px solid var(--border); border-radius: 12px; }
 
+.json-preview {
+  margin-top: 24px;
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+}
+
+.json-preview h3 { margin: 0 0 12px; color: var(--text-h); }
+
+.json-preview pre {
+  margin: 0;
+  overflow-x: auto;
+  font-size: 0.95rem;
+}
+
 @media (max-width: 900px) {
   .th-sb { display: none; }
   .th-main { padding: 18px; }
