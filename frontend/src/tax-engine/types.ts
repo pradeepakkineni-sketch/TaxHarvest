@@ -16,6 +16,7 @@ export interface FederalTaxInput {
   ordinaryIncome: number
   shortTermCapitalGains?: number
   longTermCapitalGains?: number
+  netInvestmentIncome?: number
   enableNIIT?: boolean
 }
 

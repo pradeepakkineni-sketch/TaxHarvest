@@ -55,6 +55,16 @@
 .profile-form label { display: flex; flex-direction: column; gap: 6px; font-weight: 500; color: var(--text-h); }
 .profile-form input, .profile-form select { padding: 10px; border: 1px solid var(--border); border-radius: 8px; }
 
+.analysis-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 880px; margin-bottom: 28px; }
+.analysis-form label { display: flex; flex-direction: column; gap: 8px; font-weight: 500; color: var(--text-h); }
+.analysis-form input, .analysis-form select { padding: 10px; border: 1px solid var(--border); border-radius: 8px; }
+.analysis-form .checkbox-field { align-items: center; flex-direction: row; gap: 10px; margin-top: 10px; }
+
+.result-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.result-card { padding: 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg); }
+.result-card h3 { margin: 0 0 10px; font-size: 0.98rem; }
+.result-card div { font-size: 1.1rem; font-weight: 600; color: var(--text-h); }
+
 .analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .analysis-card { padding: 12px; border: 1px solid var(--border); border-radius: 12px; }
 

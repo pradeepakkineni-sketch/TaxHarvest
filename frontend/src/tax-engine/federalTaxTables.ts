@@ -57,28 +57,28 @@ export const federalTaxTables2025: FederalTaxTables = {
   ltcgBrackets: {
     single: [
       { threshold: 0, rate: 0 },
-      { threshold: 59700, rate: 0.15 },
-      { threshold: 492300, rate: 0.2 },
+      { threshold: 48350, rate: 0.15 },
+      { threshold: 533400, rate: 0.2 },
     ],
     marriedFilingJointly: [
       { threshold: 0, rate: 0 },
-      { threshold: 99400, rate: 0.15 },
-      { threshold: 615150, rate: 0.2 },
+      { threshold: 96700, rate: 0.15 },
+      { threshold: 600050, rate: 0.2 },
     ],
     marriedFilingSeparately: [
       { threshold: 0, rate: 0 },
-      { threshold: 49700, rate: 0.15 },
-      { threshold: 307575, rate: 0.2 },
+      { threshold: 48350, rate: 0.15 },
+      { threshold: 300000, rate: 0.2 },
     ],
     headOfHousehold: [
       { threshold: 0, rate: 0 },
-      { threshold: 59700, rate: 0.15 },
-      { threshold: 519400, rate: 0.2 },
+      { threshold: 64750, rate: 0.15 },
+      { threshold: 566700, rate: 0.2 },
     ],
     qualifyingSurvivingSpouse: [
       { threshold: 0, rate: 0 },
-      { threshold: 99400, rate: 0.15 },
-      { threshold: 615150, rate: 0.2 },
+      { threshold: 96700, rate: 0.15 },
+      { threshold: 600050, rate: 0.2 },
     ],
   },
   niitThresholds: {

@@ -62,6 +62,7 @@ export function calculateFederalTax(input: FederalTaxInput): FederalTaxResult {
     ordinaryIncome,
     shortTermCapitalGains = 0,
     longTermCapitalGains = 0,
+    netInvestmentIncome = 0,
     enableNIIT = false,
   } = input
 
@@ -80,8 +81,9 @@ export function calculateFederalTax(input: FederalTaxInput): FederalTaxResult {
     ltcgAllocation.twentyPercent * 0.2
 
   const preliminaryTax = ordinaryTaxResult.tax + ltcgTax
-  const niitAmount = enableNIIT && totalIncomeForLtcg + longTermCapitalGains > niitThreshold
-    ? (totalIncomeForLtcg + longTermCapitalGains - niitThreshold) * 0.038
+  const incomeAboveThreshold = Math.max(0, totalIncomeForLtcg + longTermCapitalGains - niitThreshold)
+  const niitAmount = enableNIIT
+    ? Math.min(netInvestmentIncome, incomeAboveThreshold) * 0.038
     : 0
 
   return {
