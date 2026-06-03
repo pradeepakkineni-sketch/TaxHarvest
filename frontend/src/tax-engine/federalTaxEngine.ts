@@ -1,5 +1,12 @@
 import { federalTaxTables2025 } from './federalTaxTables'
-import type { FederalTaxInput, FederalTaxResult, LtcgAllocation, TaxBracket } from './types'
+import type {
+  CapitalGainLossInput,
+  CapitalGainLossNettingResult,
+  FederalTaxInput,
+  FederalTaxResult,
+  LtcgAllocation,
+  TaxBracket,
+} from './types'
 
 function calculateProgressiveTax(amount: number, brackets: TaxBracket[]) {
   const ordered = [...brackets].sort((a, b) => a.threshold - b.threshold)
@@ -53,6 +60,76 @@ function allocateLongTermCapitalGains(
   }
 
   return allocated
+}
+
+export function calculateCapitalGainsNetting(
+  input: CapitalGainLossInput,
+): CapitalGainLossNettingResult {
+  const {
+    shortTermGains,
+    shortTermLosses,
+    longTermGains,
+    longTermLosses,
+    priorYearCapitalLossCarryforward = 0,
+  } = input
+
+  const netShortTerm = shortTermGains - shortTermLosses
+  const netLongTerm = longTermGains - longTermLosses
+
+  let finalShortTermTaxableGain = 0
+  let finalLongTermTaxableGain = 0
+
+  if (netShortTerm >= 0 && netLongTerm >= 0) {
+    finalShortTermTaxableGain = netShortTerm
+    finalLongTermTaxableGain = netLongTerm
+  } else if (netShortTerm <= 0 && netLongTerm <= 0) {
+    finalShortTermTaxableGain = 0
+    finalLongTermTaxableGain = 0
+  } else if (netShortTerm > 0 && netLongTerm < 0) {
+    const offset = Math.min(netShortTerm, Math.abs(netLongTerm))
+    finalShortTermTaxableGain = netShortTerm - offset
+    finalLongTermTaxableGain = 0
+  } else if (netShortTerm < 0 && netLongTerm > 0) {
+    const offset = Math.min(Math.abs(netShortTerm), netLongTerm)
+    finalShortTermTaxableGain = 0
+    finalLongTermTaxableGain = netLongTerm - offset
+  }
+
+  let totalNetCapitalGainOrLoss = finalShortTermTaxableGain + finalLongTermTaxableGain
+
+  let ordinaryIncomeOffset = 0
+  let capitalLossCarryforward = priorYearCapitalLossCarryforward
+
+  if (totalNetCapitalGainOrLoss < 0) {
+    ordinaryIncomeOffset = Math.min(3000, Math.abs(totalNetCapitalGainOrLoss))
+    capitalLossCarryforward =
+      priorYearCapitalLossCarryforward + Math.abs(totalNetCapitalGainOrLoss) - ordinaryIncomeOffset
+    totalNetCapitalGainOrLoss += ordinaryIncomeOffset
+  } else if (priorYearCapitalLossCarryforward > 0 && totalNetCapitalGainOrLoss > 0) {
+    const carryUsage = Math.min(priorYearCapitalLossCarryforward, totalNetCapitalGainOrLoss)
+    totalNetCapitalGainOrLoss -= carryUsage
+    capitalLossCarryforward = priorYearCapitalLossCarryforward - carryUsage
+    if (totalNetCapitalGainOrLoss === 0) {
+      finalShortTermTaxableGain = 0
+      finalLongTermTaxableGain = 0
+    } else if (finalShortTermTaxableGain > 0) {
+      const reduction = Math.min(finalShortTermTaxableGain, carryUsage)
+      finalShortTermTaxableGain -= reduction
+    } else if (finalLongTermTaxableGain > 0) {
+      const reduction = Math.min(finalLongTermTaxableGain, carryUsage)
+      finalLongTermTaxableGain -= reduction
+    }
+  }
+
+  return {
+    netShortTerm,
+    netLongTerm,
+    finalShortTermTaxableGain,
+    finalLongTermTaxableGain,
+    totalNetCapitalGainOrLoss,
+    ordinaryIncomeOffset,
+    capitalLossCarryforward,
+  }
 }
 
 export function calculateFederalTax(input: FederalTaxInput): FederalTaxResult {

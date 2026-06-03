@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { calculateFederalTax } from '../tax-engine/federalTaxEngine'
+import { calculateCapitalGainsNetting, calculateFederalTax } from '../tax-engine/federalTaxEngine'
 import { usePortfolio } from '../context/PortfolioContext'
 import type { FilingStatus } from '../tax-engine/types'
 
@@ -21,8 +21,55 @@ export default function Analysis() {
   const [enableNIIT, setEnableNIIT] = useState(false)
   const [usePortfolioData, setUsePortfolioData] = useState(false)
 
-  const finalShortTermCapitalGains = usePortfolioData ? portfolio.summary.totalShortTermGainLoss : shortTermCapitalGains
-  const finalLongTermCapitalGains = usePortfolioData ? portfolio.summary.totalLongTermGainLoss : longTermCapitalGains
+  const portfolioShortTermGains = useMemo(
+    () =>
+      portfolio.calculated
+        .filter((tx) => tx.taxClassification === 'Short-Term' && tx.gainLoss > 0)
+        .reduce((sum, tx) => sum + tx.gainLoss, 0),
+    [portfolio.calculated],
+  )
+
+  const portfolioShortTermLosses = useMemo(
+    () =>
+      portfolio.calculated
+        .filter((tx) => tx.taxClassification === 'Short-Term' && tx.gainLoss < 0)
+        .reduce((sum, tx) => sum + Math.abs(tx.gainLoss), 0),
+    [portfolio.calculated],
+  )
+
+  const portfolioLongTermGains = useMemo(
+    () =>
+      portfolio.calculated
+        .filter((tx) => tx.taxClassification === 'Long-Term' && tx.gainLoss > 0)
+        .reduce((sum, tx) => sum + tx.gainLoss, 0),
+    [portfolio.calculated],
+  )
+
+  const portfolioLongTermLosses = useMemo(
+    () =>
+      portfolio.calculated
+        .filter((tx) => tx.taxClassification === 'Long-Term' && tx.gainLoss < 0)
+        .reduce((sum, tx) => sum + Math.abs(tx.gainLoss), 0),
+    [portfolio.calculated],
+  )
+
+  const portfolioNetting = useMemo(
+    () =>
+      calculateCapitalGainsNetting({
+        shortTermGains: portfolioShortTermGains,
+        shortTermLosses: portfolioShortTermLosses,
+        longTermGains: portfolioLongTermGains,
+        longTermLosses: portfolioLongTermLosses,
+      }),
+    [portfolioShortTermGains, portfolioShortTermLosses, portfolioLongTermGains, portfolioLongTermLosses],
+  )
+
+  const finalShortTermCapitalGains = usePortfolioData
+    ? portfolioNetting.finalShortTermTaxableGain
+    : shortTermCapitalGains
+  const finalLongTermCapitalGains = usePortfolioData
+    ? portfolioNetting.finalLongTermTaxableGain
+    : longTermCapitalGains
 
   const result = useMemo(
     () =>
@@ -54,23 +101,67 @@ export default function Analysis() {
       </div>
 
       {usePortfolioData && (
-        <div className="portfolio-summary">
-          <h3>Portfolio Totals</h3>
-          <div className="portfolio-totals">
-            <div className="total-item">
-              <span>Short-Term Gains/Losses:</span>
-              <strong>${portfolio.summary.totalShortTermGainLoss.toFixed(2)}</strong>
-            </div>
-            <div className="total-item">
-              <span>Long-Term Gains/Losses:</span>
-              <strong>${portfolio.summary.totalLongTermGainLoss.toFixed(2)}</strong>
-            </div>
-            <div className="total-item">
-              <span>Total Realized Gains/Losses:</span>
-              <strong>${portfolio.summary.totalRealizedGainLoss.toFixed(2)}</strong>
+        <>
+          <div className="portfolio-summary">
+            <h3>Portfolio Totals</h3>
+            <div className="portfolio-totals">
+              <div className="total-item">
+                <span>Short-Term Gains:</span>
+                <strong>${portfolioShortTermGains.toFixed(2)}</strong>
+              </div>
+              <div className="total-item">
+                <span>Short-Term Losses:</span>
+                <strong>${portfolioShortTermLosses.toFixed(2)}</strong>
+              </div>
+              <div className="total-item">
+                <span>Long-Term Gains:</span>
+                <strong>${portfolioLongTermGains.toFixed(2)}</strong>
+              </div>
+              <div className="total-item">
+                <span>Long-Term Losses:</span>
+                <strong>${portfolioLongTermLosses.toFixed(2)}</strong>
+              </div>
+              <div className="total-item">
+                <span>Total Realized Gains/Losses:</span>
+                <strong>${portfolio.summary.totalRealizedGainLoss.toFixed(2)}</strong>
+              </div>
             </div>
           </div>
-        </div>
+
+          <div className="portfolio-summary">
+            <h3>Capital Gains Netting</h3>
+            <div className="portfolio-totals">
+              <div className="total-item">
+                <span>Net Short-Term:</span>
+                <strong>${portfolioNetting.netShortTerm.toFixed(2)}</strong>
+              </div>
+              <div className="total-item">
+                <span>Net Long-Term:</span>
+                <strong>${portfolioNetting.netLongTerm.toFixed(2)}</strong>
+              </div>
+              <div className="total-item">
+                <span>Final ST Taxable Gain:</span>
+                <strong>${portfolioNetting.finalShortTermTaxableGain.toFixed(2)}</strong>
+              </div>
+              <div className="total-item">
+                <span>Final LT Taxable Gain:</span>
+                <strong>${portfolioNetting.finalLongTermTaxableGain.toFixed(2)}</strong>
+              </div>
+              <div className="total-item">
+                <span>Total Net Capital Gain/Loss:</span>
+                <strong>${portfolioNetting.totalNetCapitalGainOrLoss.toFixed(2)}</strong>
+              </div>
+              <div className="total-item">
+                <span>Ordinary Income Offset:</span>
+                <strong>${portfolioNetting.ordinaryIncomeOffset.toFixed(2)}</strong>
+              </div>
+              <div className="total-item">
+                <span>Capital Loss Carryforward:</span>
+                <strong>${portfolioNetting.capitalLossCarryforward.toFixed(2)}</strong>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       <div className="analysis-form">

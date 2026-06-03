@@ -20,6 +20,24 @@ export interface FederalTaxInput {
   enableNIIT?: boolean
 }
 
+export interface CapitalGainLossInput {
+  shortTermGains: number
+  shortTermLosses: number
+  longTermGains: number
+  longTermLosses: number
+  priorYearCapitalLossCarryforward?: number
+}
+
+export interface CapitalGainLossNettingResult {
+  netShortTerm: number
+  netLongTerm: number
+  finalShortTermTaxableGain: number
+  finalLongTermTaxableGain: number
+  totalNetCapitalGainOrLoss: number
+  ordinaryIncomeOffset: number
+  capitalLossCarryforward: number
+}
+
 export interface LtcgAllocation {
   zeroPercent: number
   fifteenPercent: number
