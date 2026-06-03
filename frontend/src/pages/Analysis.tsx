@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { calculateFederalTax } from '../tax-engine/federalTaxEngine'
+import { usePortfolio } from '../context/PortfolioContext'
 import type { FilingStatus } from '../tax-engine/types'
 
 const filingStatusOptions: Array<{ value: FilingStatus; label: string }> = [
@@ -11,12 +12,17 @@ const filingStatusOptions: Array<{ value: FilingStatus; label: string }> = [
 ]
 
 export default function Analysis() {
+  const portfolio = usePortfolio()
   const [filingStatus, setFilingStatus] = useState<FilingStatus>('single')
   const [ordinaryIncome, setOrdinaryIncome] = useState(0)
   const [shortTermCapitalGains, setShortTermCapitalGains] = useState(0)
   const [longTermCapitalGains, setLongTermCapitalGains] = useState(0)
   const [netInvestmentIncome, setNetInvestmentIncome] = useState(0)
   const [enableNIIT, setEnableNIIT] = useState(false)
+  const [usePortfolioData, setUsePortfolioData] = useState(false)
+
+  const finalShortTermCapitalGains = usePortfolioData ? portfolio.summary.totalShortTermGainLoss : shortTermCapitalGains
+  const finalLongTermCapitalGains = usePortfolioData ? portfolio.summary.totalLongTermGainLoss : longTermCapitalGains
 
   const result = useMemo(
     () =>
@@ -24,17 +30,49 @@ export default function Analysis() {
         filingStatus,
         taxYear: 2025,
         ordinaryIncome,
-        shortTermCapitalGains,
-        longTermCapitalGains,
+        shortTermCapitalGains: finalShortTermCapitalGains,
+        longTermCapitalGains: finalLongTermCapitalGains,
         netInvestmentIncome,
         enableNIIT,
       }),
-    [filingStatus, ordinaryIncome, shortTermCapitalGains, longTermCapitalGains, netInvestmentIncome, enableNIIT],
+    [filingStatus, ordinaryIncome, finalShortTermCapitalGains, finalLongTermCapitalGains, netInvestmentIncome, enableNIIT],
   )
 
   return (
     <section>
       <h2>Analysis</h2>
+
+      <div className="portfolio-source-toggle">
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            checked={usePortfolioData}
+            onChange={(e) => setUsePortfolioData(e.target.checked)}
+          />
+          Use Portfolio Totals
+        </label>
+      </div>
+
+      {usePortfolioData && (
+        <div className="portfolio-summary">
+          <h3>Portfolio Totals</h3>
+          <div className="portfolio-totals">
+            <div className="total-item">
+              <span>Short-Term Gains/Losses:</span>
+              <strong>${portfolio.summary.totalShortTermGainLoss.toFixed(2)}</strong>
+            </div>
+            <div className="total-item">
+              <span>Long-Term Gains/Losses:</span>
+              <strong>${portfolio.summary.totalLongTermGainLoss.toFixed(2)}</strong>
+            </div>
+            <div className="total-item">
+              <span>Total Realized Gains/Losses:</span>
+              <strong>${portfolio.summary.totalRealizedGainLoss.toFixed(2)}</strong>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="analysis-form">
         <label>
           Filing Status
@@ -61,8 +99,9 @@ export default function Analysis() {
           Short-Term Capital Gains
           <input
             type="number"
-            value={shortTermCapitalGains}
-            onChange={(e) => setShortTermCapitalGains(Number(e.target.value))}
+            value={finalShortTermCapitalGains}
+            onChange={(e) => !usePortfolioData && setShortTermCapitalGains(Number(e.target.value))}
+            disabled={usePortfolioData}
             min={0}
           />
         </label>
@@ -71,8 +110,9 @@ export default function Analysis() {
           Long-Term Capital Gains
           <input
             type="number"
-            value={longTermCapitalGains}
-            onChange={(e) => setLongTermCapitalGains(Number(e.target.value))}
+            value={finalLongTermCapitalGains}
+            onChange={(e) => !usePortfolioData && setLongTermCapitalGains(Number(e.target.value))}
+            disabled={usePortfolioData}
             min={0}
           />
         </label>
@@ -104,7 +144,7 @@ export default function Analysis() {
         </div>
         <div className="result-card">
           <h3>Short-Term Capital Gains Tax Impact</h3>
-          <div>${shortTermCapitalGains.toFixed(2)}</div>
+          <div>${finalShortTermCapitalGains.toFixed(2)}</div>
         </div>
         <div className="result-card">
           <h3>LTCG 0% Portion</h3>

@@ -1,90 +1,7 @@
-import { useState } from 'react'
-
-interface Transaction {
-  id: string
-  ticker: string
-  shares: number
-  buyDate: string
-  sellDate: string
-  buyPrice: number
-  sellPrice: number
-}
-
-function calculateTransaction(tx: Transaction) {
-  const costBasis = tx.shares * tx.buyPrice
-  const saleProceeds = tx.shares * tx.sellPrice
-  const gainLoss = saleProceeds - costBasis
-
-  const buyDateObj = new Date(tx.buyDate)
-  const sellDateObj = new Date(tx.sellDate)
-  const holdingDays = Math.floor((sellDateObj.getTime() - buyDateObj.getTime()) / (1000 * 60 * 60 * 24))
-  const taxClassification = holdingDays > 365 ? 'Long-Term' : 'Short-Term'
-
-  return { costBasis, saleProceeds, gainLoss, holdingDays, taxClassification }
-}
+import { usePortfolio } from '../context/PortfolioContext'
 
 export default function Portfolio() {
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: '1',
-      ticker: '',
-      shares: 0,
-      buyDate: '',
-      sellDate: '',
-      buyPrice: 0,
-      sellPrice: 0,
-    },
-  ])
-
-  const handleAddRow = () => {
-    const newId = Math.random().toString(36).slice(2, 9)
-    setTransactions((prev) => [
-      ...prev,
-      {
-        id: newId,
-        ticker: '',
-        shares: 0,
-        buyDate: '',
-        sellDate: '',
-        buyPrice: 0,
-        sellPrice: 0,
-      },
-    ])
-  }
-
-  const handleRemoveRow = (id: string) => {
-    setTransactions((prev) => prev.filter((tx) => tx.id !== id))
-  }
-
-  const handleChange = (id: string, field: keyof Transaction, value: string | number) => {
-    setTransactions((prev) =>
-      prev.map((tx) => (tx.id === id ? { ...tx, [field]: value } : tx)),
-    )
-  }
-
-  const calculatedTransactions = transactions.map((tx) => ({
-    ...tx,
-    ...calculateTransaction(tx),
-  }))
-
-  const summary = calculatedTransactions.reduce(
-    (acc, tx) => {
-      if (tx.taxClassification === 'Short-Term') {
-        acc.totalShortTermGainLoss += tx.gainLoss
-      } else {
-        acc.totalLongTermGainLoss += tx.gainLoss
-      }
-      acc.totalRealizedGainLoss += tx.gainLoss
-      acc.totalSaleProceeds += tx.saleProceeds
-      return acc
-    },
-    {
-      totalShortTermGainLoss: 0,
-      totalLongTermGainLoss: 0,
-      totalRealizedGainLoss: 0,
-      totalSaleProceeds: 0,
-    },
-  )
+  const { calculated, summary, addTransaction, removeTransaction, updateTransaction } = usePortfolio()
 
   return (
     <section>
@@ -128,14 +45,14 @@ export default function Portfolio() {
             </tr>
           </thead>
           <tbody>
-            {calculatedTransactions.map((tx) => (
+            {calculated.map((tx) => (
               <tr key={tx.id}>
                 <td>
                   <input
                     type="text"
                     placeholder="AAPL"
                     value={tx.ticker}
-                    onChange={(e) => handleChange(tx.id, 'ticker', e.target.value)}
+                    onChange={(e) => updateTransaction(tx.id, 'ticker', e.target.value)}
                   />
                 </td>
                 <td>
@@ -143,21 +60,21 @@ export default function Portfolio() {
                     type="number"
                     placeholder="0"
                     value={tx.shares || ''}
-                    onChange={(e) => handleChange(tx.id, 'shares', Number(e.target.value))}
+                    onChange={(e) => updateTransaction(tx.id, 'shares', Number(e.target.value))}
                   />
                 </td>
                 <td>
                   <input
                     type="date"
                     value={tx.buyDate}
-                    onChange={(e) => handleChange(tx.id, 'buyDate', e.target.value)}
+                    onChange={(e) => updateTransaction(tx.id, 'buyDate', e.target.value)}
                   />
                 </td>
                 <td>
                   <input
                     type="date"
                     value={tx.sellDate}
-                    onChange={(e) => handleChange(tx.id, 'sellDate', e.target.value)}
+                    onChange={(e) => updateTransaction(tx.id, 'sellDate', e.target.value)}
                   />
                 </td>
                 <td>
@@ -165,7 +82,7 @@ export default function Portfolio() {
                     type="number"
                     placeholder="0"
                     value={tx.buyPrice || ''}
-                    onChange={(e) => handleChange(tx.id, 'buyPrice', Number(e.target.value))}
+                    onChange={(e) => updateTransaction(tx.id, 'buyPrice', Number(e.target.value))}
                   />
                 </td>
                 <td>
@@ -173,7 +90,7 @@ export default function Portfolio() {
                     type="number"
                     placeholder="0"
                     value={tx.sellPrice || ''}
-                    onChange={(e) => handleChange(tx.id, 'sellPrice', Number(e.target.value))}
+                    onChange={(e) => updateTransaction(tx.id, 'sellPrice', Number(e.target.value))}
                   />
                 </td>
                 <td className="calculated">${tx.costBasis.toFixed(2)}</td>
@@ -183,7 +100,7 @@ export default function Portfolio() {
                 <td className="calculated">{tx.taxClassification}</td>
                 <td>
                   <button
-                    onClick={() => handleRemoveRow(tx.id)}
+                    onClick={() => removeTransaction(tx.id)}
                     className="btn-remove"
                   >
                     Remove
@@ -193,7 +110,7 @@ export default function Portfolio() {
             ))}
           </tbody>
         </table>
-        <button onClick={handleAddRow} className="btn-add-row">
+        <button onClick={addTransaction} className="btn-add-row">
           + Add Transaction
         </button>
       </div>
