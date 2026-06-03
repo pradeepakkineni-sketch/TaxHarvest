@@ -46,9 +46,31 @@
 .card { padding: 18px; border: 1px solid var(--border); border-radius: 12px; text-align: left; background: var(--bg); }
 .card .big { font-size: 20px; font-weight: 600; margin-top: 8px; color: var(--text-h); }
 
-.table-card { padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
-.holdings { width: 100%; border-collapse: collapse; }
-.holdings th, .holdings td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+.table-card { padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); overflow-x: auto; }
+.transactions { width: 100%; min-width: 1180px; border-collapse: collapse; font-size: 0.95rem; }
+.transactions th, .transactions td { padding: 10px 8px; border-bottom: 1px solid var(--border); }
+.transactions th { background: var(--accent-bg); font-weight: 600; border-bottom: 2px solid var(--border); }
+.transactions td input { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.95rem; box-sizing: border-box; }
+.transactions th:nth-child(1), .transactions td:nth-child(1) { min-width: 100px; }
+.transactions th:nth-child(2), .transactions td:nth-child(2),
+.transactions th:nth-child(3), .transactions td:nth-child(3),
+.transactions th:nth-child(4), .transactions td:nth-child(4) { min-width: 110px; }
+.transactions th:nth-child(5), .transactions td:nth-child(5),
+.transactions th:nth-child(6), .transactions td:nth-child(6) { min-width: 120px; }
+.transactions th:nth-child(7), .transactions td:nth-child(7),
+.transactions th:nth-child(8), .transactions td:nth-child(8),
+.transactions th:nth-child(9), .transactions td:nth-child(9) { min-width: 130px; }
+.transactions th:nth-child(10), .transactions td:nth-child(10) { min-width: 100px; }
+.transactions th:nth-child(11), .transactions td:nth-child(11) { min-width: 140px; }
+.transactions th:nth-child(12), .transactions td:nth-child(12) { min-width: 100px; }
+.transactions td:nth-child(2),
+.transactions td:nth-child(5),
+.transactions td:nth-child(6),
+.transactions td:nth-child(7),
+.transactions td:nth-child(8),
+.transactions td:nth-child(9),
+.transactions td:nth-child(10) { text-align: right; }
+.transactions td:nth-child(12) { text-align: center; }
 .placeholder { color: var(--text); text-align: center; padding: 24px 0; }
 
 .summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
@@ -70,6 +92,28 @@
 .profile-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 720px; }
 .profile-form label { display: flex; flex-direction: column; gap: 6px; font-weight: 500; color: var(--text-h); }
 .profile-form input, .profile-form select { padding: 10px; border: 1px solid var(--border); border-radius: 8px; }
+
+.empty-state { padding: 40px 20px; text-align: center; color: var(--text); }
+
+.note { font-size: 0.9rem; color: var(--text); margin-bottom: 12px; line-height: 1.4; }
+
+.harvestable-lots { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+
+.harvestable-lots th { background: var(--accent-bg); padding: 10px 6px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); }
+
+.harvestable-lots td { padding: 10px 6px; border-bottom: 1px solid var(--border); }
+
+.harvestable-lots .ticker { font-weight: 500; }
+
+.harvestable-lots .loss { color: #c33; font-weight: 600; }
+
+.harvestable-lots .benefit { color: #3a3; font-weight: 600; }
+
+.badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; }
+
+.badge.short-term { background: #fee; color: #c33; }
+
+.badge.long-term { background: #efe; color: #363; }
 
 .portfolio-source-toggle { margin-bottom: 20px; }
 

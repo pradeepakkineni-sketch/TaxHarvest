@@ -10,6 +10,7 @@ export default function Sidebar() {
         <NavLink to="/portfolio" className="nav-item">Portfolio</NavLink>
         <NavLink to="/tax-profile" className="nav-item">Tax Profile</NavLink>
         <NavLink to="/analysis" className="nav-item">Analysis</NavLink>
+        <NavLink to="/harvesting" className="nav-item">Harvesting</NavLink>
         <NavLink to="/settings" className="nav-item">Settings</NavLink>
       </nav>
       <div className="sb-footer">v0.1 • Placeholder</div>
