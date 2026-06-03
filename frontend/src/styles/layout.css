@@ -1,0 +1,67 @@
+/* Layout and sidebar styles for TaxHarvest */
+.th-app {
+  display: flex;
+  min-height: 100vh;
+}
+
+.th-sb {
+  width: 220px;
+  min-height: 100vh;
+  border-right: 1px solid var(--border);
+  padding: 20px 16px;
+  box-sizing: border-box;
+  background: var(--bg);
+}
+.th-sb .brand {
+  font-weight: 600;
+  color: var(--text-h);
+  margin-bottom: 18px;
+  font-size: 18px;
+}
+.th-sb .nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.nav-item {
+  text-decoration: none;
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+.nav-item.active,
+.nav-item[aria-current="page"] {
+  color: var(--text-h);
+  background: var(--accent-bg);
+  box-shadow: var(--shadow);
+}
+.sb-footer { margin-top: auto; font-size: 13px; color: var(--text); }
+
+.th-main {
+  flex: 1 1 auto;
+  padding: 28px;
+}
+
+.cards { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+.card { padding: 18px; border: 1px solid var(--border); border-radius: 12px; text-align: left; background: var(--bg); }
+.card .big { font-size: 20px; font-weight: 600; margin-top: 8px; color: var(--text-h); }
+
+.table-card { padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
+.holdings { width: 100%; border-collapse: collapse; }
+.holdings th, .holdings td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+.placeholder { color: var(--text); text-align: center; padding: 24px 0; }
+
+.profile-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 720px; }
+.profile-form label { display: flex; flex-direction: column; gap: 6px; font-weight: 500; color: var(--text-h); }
+.profile-form input, .profile-form select { padding: 10px; border: 1px solid var(--border); border-radius: 8px; }
+
+.analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.analysis-card { padding: 12px; border: 1px solid var(--border); border-radius: 12px; }
+
+@media (max-width: 900px) {
+  .th-sb { display: none; }
+  .th-main { padding: 18px; }
+  .cards { grid-template-columns: repeat(2,1fr); }
+  .analysis-grid { grid-template-columns: 1fr; }
+  .profile-form { grid-template-columns: 1fr; }
+}

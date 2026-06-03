@@ -1,0 +1,4 @@
+.th-sb .nav .nav-item {
+  color: var(--text);
+}
+.th-sb .nav .nav-item:hover { background: rgba(0,0,0,0.03); }
