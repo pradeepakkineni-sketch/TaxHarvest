@@ -75,6 +75,7 @@ export function calculateCapitalGainsNetting(
 
   const netShortTerm = shortTermGains - shortTermLosses
   const netLongTerm = longTermGains - longTermLosses
+  const totalNetBeforeCarryforward = netShortTerm + netLongTerm
 
   let finalShortTermTaxableGain = 0
   let finalLongTermTaxableGain = 0
@@ -95,29 +96,33 @@ export function calculateCapitalGainsNetting(
     finalLongTermTaxableGain = netLongTerm - offset
   }
 
-  let totalNetCapitalGainOrLoss = finalShortTermTaxableGain + finalLongTermTaxableGain
+  let totalNetCapitalGainOrLoss =
+    totalNetBeforeCarryforward >= 0
+      ? finalShortTermTaxableGain + finalLongTermTaxableGain
+      : totalNetBeforeCarryforward
 
   let ordinaryIncomeOffset = 0
   let capitalLossCarryforward = priorYearCapitalLossCarryforward
 
   if (totalNetCapitalGainOrLoss < 0) {
     ordinaryIncomeOffset = Math.min(3000, Math.abs(totalNetCapitalGainOrLoss))
-    capitalLossCarryforward =
-      priorYearCapitalLossCarryforward + Math.abs(totalNetCapitalGainOrLoss) - ordinaryIncomeOffset
+    capitalLossCarryforward += Math.abs(totalNetCapitalGainOrLoss) - ordinaryIncomeOffset
     totalNetCapitalGainOrLoss += ordinaryIncomeOffset
-  } else if (priorYearCapitalLossCarryforward > 0 && totalNetCapitalGainOrLoss > 0) {
-    const carryUsage = Math.min(priorYearCapitalLossCarryforward, totalNetCapitalGainOrLoss)
+  } else if (capitalLossCarryforward > 0 && totalNetCapitalGainOrLoss > 0) {
+    const carryUsage = Math.min(capitalLossCarryforward, totalNetCapitalGainOrLoss)
     totalNetCapitalGainOrLoss -= carryUsage
-    capitalLossCarryforward = priorYearCapitalLossCarryforward - carryUsage
-    if (totalNetCapitalGainOrLoss === 0) {
-      finalShortTermTaxableGain = 0
-      finalLongTermTaxableGain = 0
-    } else if (finalShortTermTaxableGain > 0) {
-      const reduction = Math.min(finalShortTermTaxableGain, carryUsage)
+    capitalLossCarryforward -= carryUsage
+
+    let remainingUsage = carryUsage
+    if (finalShortTermTaxableGain > 0) {
+      const reduction = Math.min(finalShortTermTaxableGain, remainingUsage)
       finalShortTermTaxableGain -= reduction
-    } else if (finalLongTermTaxableGain > 0) {
-      const reduction = Math.min(finalLongTermTaxableGain, carryUsage)
+      remainingUsage -= reduction
+    }
+    if (remainingUsage > 0 && finalLongTermTaxableGain > 0) {
+      const reduction = Math.min(finalLongTermTaxableGain, remainingUsage)
       finalLongTermTaxableGain -= reduction
+      remainingUsage -= reduction
     }
   }
 
