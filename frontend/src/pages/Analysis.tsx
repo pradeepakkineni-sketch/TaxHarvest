@@ -1,7 +1,30 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { calculateCapitalGainsNetting, calculateFederalTax } from '../tax-engine/federalTaxEngine'
 import { usePortfolio } from '../context/PortfolioContext'
+import { loadFromStorage, saveToStorage } from '../utils/storage'
 import type { FilingStatus } from '../tax-engine/types'
+
+const ANALYSIS_STORAGE_KEY = 'analysisInputs'
+
+interface AnalysisStorage {
+  filingStatus: FilingStatus
+  ordinaryIncome: number
+  shortTermCapitalGains: number
+  longTermCapitalGains: number
+  netInvestmentIncome: number
+  enableNIIT: boolean
+  usePortfolioData: boolean
+}
+
+const defaultAnalysisState: AnalysisStorage = {
+  filingStatus: 'single',
+  ordinaryIncome: 0,
+  shortTermCapitalGains: 0,
+  longTermCapitalGains: 0,
+  netInvestmentIncome: 0,
+  enableNIIT: false,
+  usePortfolioData: false,
+}
 
 const filingStatusOptions: Array<{ value: FilingStatus; label: string }> = [
   { value: 'single', label: 'Single' },
@@ -13,13 +36,39 @@ const filingStatusOptions: Array<{ value: FilingStatus; label: string }> = [
 
 export default function Analysis() {
   const portfolio = usePortfolio()
-  const [filingStatus, setFilingStatus] = useState<FilingStatus>('single')
-  const [ordinaryIncome, setOrdinaryIncome] = useState(0)
-  const [shortTermCapitalGains, setShortTermCapitalGains] = useState(0)
-  const [longTermCapitalGains, setLongTermCapitalGains] = useState(0)
-  const [netInvestmentIncome, setNetInvestmentIncome] = useState(0)
-  const [enableNIIT, setEnableNIIT] = useState(false)
-  const [usePortfolioData, setUsePortfolioData] = useState(false)
+  const [filingStatus, setFilingStatus] = useState<FilingStatus>(() =>
+    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).filingStatus,
+  )
+  const [ordinaryIncome, setOrdinaryIncome] = useState<number>(() =>
+    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).ordinaryIncome,
+  )
+  const [shortTermCapitalGains, setShortTermCapitalGains] = useState<number>(() =>
+    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).shortTermCapitalGains,
+  )
+  const [longTermCapitalGains, setLongTermCapitalGains] = useState<number>(() =>
+    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).longTermCapitalGains,
+  )
+  const [netInvestmentIncome, setNetInvestmentIncome] = useState<number>(() =>
+    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).netInvestmentIncome,
+  )
+  const [enableNIIT, setEnableNIIT] = useState<boolean>(() =>
+    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).enableNIIT,
+  )
+  const [usePortfolioData, setUsePortfolioData] = useState<boolean>(() =>
+    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).usePortfolioData,
+  )
+
+  useEffect(() => {
+    saveToStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, {
+      filingStatus,
+      ordinaryIncome,
+      shortTermCapitalGains,
+      longTermCapitalGains,
+      netInvestmentIncome,
+      enableNIIT,
+      usePortfolioData,
+    })
+  }, [filingStatus, ordinaryIncome, shortTermCapitalGains, longTermCapitalGains, netInvestmentIncome, enableNIIT, usePortfolioData])
 
   const portfolioShortTermGains = useMemo(
     () =>

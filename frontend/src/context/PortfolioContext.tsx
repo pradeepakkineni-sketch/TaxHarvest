@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useCallback, useMemo } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react'
 import type { ReactNode } from 'react'
+import { loadFromStorage, saveToStorage } from '../utils/storage'
 
 export interface Transaction {
   id: string
@@ -50,18 +51,26 @@ function calculateTransaction(tx: Transaction): Omit<CalculatedTransaction, keyo
   return { costBasis, saleProceeds, gainLoss, holdingDays, taxClassification }
 }
 
+const PORTFOLIO_STORAGE_KEY = 'portfolioTransactions'
+
 export function PortfolioProvider({ children }: { children: ReactNode }) {
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: '1',
-      ticker: '',
-      shares: 0,
-      buyDate: '',
-      sellDate: '',
-      buyPrice: 0,
-      sellPrice: 0,
-    },
-  ])
+  const [transactions, setTransactions] = useState<Transaction[]>(() =>
+    loadFromStorage<Transaction[]>(PORTFOLIO_STORAGE_KEY, [
+      {
+        id: '1',
+        ticker: '',
+        shares: 0,
+        buyDate: '',
+        sellDate: '',
+        buyPrice: 0,
+        sellPrice: 0,
+      },
+    ]),
+  )
+
+  useEffect(() => {
+    saveToStorage(PORTFOLIO_STORAGE_KEY, transactions)
+  }, [transactions])
 
   const calculated = useMemo(
     () =>

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { loadFromStorage, saveToStorage } from '../utils/storage'
 
 export interface TaxProfile {
   taxYear: number
@@ -62,15 +63,25 @@ const stateOptions = [
   { value: 'WY', label: 'Wyoming' },
 ]
 
+const TAX_PROFILE_STORAGE_KEY = 'taxProfile'
+
+const defaultProfile: TaxProfile = {
+  taxYear: 2024,
+  filingStatus: 'single',
+  state: 'CA',
+  ordinaryIncome: 0,
+  netInvestmentIncome: 0,
+  enableNIIT: false,
+}
+
 export default function TaxProfile() {
-  const [profile, setProfile] = useState<TaxProfile>({
-    taxYear: 2024,
-    filingStatus: 'single',
-    state: 'CA',
-    ordinaryIncome: 0,
-    netInvestmentIncome: 0,
-    enableNIIT: false,
-  })
+  const [profile, setProfile] = useState<TaxProfile>(() =>
+    loadFromStorage<TaxProfile>(TAX_PROFILE_STORAGE_KEY, defaultProfile),
+  )
+
+  useEffect(() => {
+    saveToStorage(TAX_PROFILE_STORAGE_KEY, profile)
+  }, [profile])
 
   const handleChange = (field: keyof TaxProfile, value: string | number | boolean) => {
     setProfile((current) => ({
