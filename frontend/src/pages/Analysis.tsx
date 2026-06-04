@@ -13,7 +13,7 @@ const filingStatusOptions: Array<{ value: FilingStatus; label: string }> = [
 
 export default function Analysis() {
   const portfolioContext = usePortfolio()
-  const { analysisSettings, setAnalysisSettings, calculated: portfolioCalculated, summary: portfolioSummary } = portfolioContext
+  const { analysisSettings, setAnalysisSettings, calculated: portfolioCalculated, summary: portfolioSummary, taxProfile } = portfolioContext
 
   const {
     filingStatus,
@@ -23,6 +23,7 @@ export default function Analysis() {
     netInvestmentIncome,
     enableNIIT,
     usePortfolioData,
+    useTaxProfileValues,
   } = analysisSettings
 
   const updateAnalysisSettings = (updates: Partial<typeof analysisSettings>) => {
@@ -31,6 +32,11 @@ export default function Analysis() {
       ...updates,
     })
   }
+
+  const sourceFilingStatus = useTaxProfileValues ? (taxProfile.filingStatus as FilingStatus) : filingStatus
+  const sourceOrdinaryIncome = useTaxProfileValues ? taxProfile.ordinaryIncome : ordinaryIncome
+  const sourceNetInvestmentIncome = useTaxProfileValues ? taxProfile.netInvestmentIncome : netInvestmentIncome
+  const sourceEnableNIIT = useTaxProfileValues ? taxProfile.enableNIIT : enableNIIT
 
   const portfolioShortTermGains = useMemo(
     () =>
@@ -85,30 +91,85 @@ export default function Analysis() {
   const result = useMemo(
     () =>
       calculateFederalTax({
-        filingStatus,
+        filingStatus: sourceFilingStatus,
         taxYear: 2025,
-        ordinaryIncome,
+        ordinaryIncome: sourceOrdinaryIncome,
         shortTermCapitalGains: finalShortTermCapitalGains,
         longTermCapitalGains: finalLongTermCapitalGains,
-        netInvestmentIncome,
-        enableNIIT,
+        netInvestmentIncome: sourceNetInvestmentIncome,
+        enableNIIT: sourceEnableNIIT,
       }),
-    [filingStatus, ordinaryIncome, finalShortTermCapitalGains, finalLongTermCapitalGains, netInvestmentIncome, enableNIIT],
+    [sourceFilingStatus, sourceOrdinaryIncome, finalShortTermCapitalGains, finalLongTermCapitalGains, sourceNetInvestmentIncome, sourceEnableNIIT],
   )
 
   return (
     <section>
       <h2>Analysis</h2>
 
-      <div className="portfolio-source-toggle">
+      <div className="profile-source-toggle">
         <label className="checkbox-field">
           <input
             type="checkbox"
-            checked={usePortfolioData}
-            onChange={(e) => updateAnalysisSettings({ usePortfolioData: e.target.checked })}
+            checked={useTaxProfileValues}
+            onChange={(e) => updateAnalysisSettings({ useTaxProfileValues: e.target.checked })}
           />
-          Use Portfolio Totals
+          Use Tax Profile Values
         </label>
+      </div>
+
+      <div className="analysis-form">
+        <label>
+          Filing Status
+          <select
+            value={sourceFilingStatus}
+            onChange={(e) => !useTaxProfileValues && updateAnalysisSettings({ filingStatus: e.target.value as FilingStatus })}
+            disabled={useTaxProfileValues}
+          >
+            {filingStatusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Ordinary Taxable Income
+          <input
+            type="number"
+            value={sourceOrdinaryIncome}
+            onChange={(e) => !useTaxProfileValues && updateAnalysisSettings({ ordinaryIncome: Number(e.target.value) })}
+            min={0}
+            disabled={useTaxProfileValues}
+          />
+        </label>
+
+        <label>
+          Net Investment Income
+          <input
+            type="number"
+            value={sourceNetInvestmentIncome}
+            onChange={(e) => !useTaxProfileValues && updateAnalysisSettings({ netInvestmentIncome: Number(e.target.value) })}
+            min={0}
+            disabled={useTaxProfileValues}
+          />
+        </label>
+
+        <label className="checkbox-field">
+          <input
+            type="checkbox"
+            checked={sourceEnableNIIT}
+            onChange={(e) => !useTaxProfileValues && updateAnalysisSettings({ enableNIIT: e.target.checked })}
+            disabled={useTaxProfileValues}
+          />
+          Enable NIIT
+        </label>
+
+        {useTaxProfileValues && (
+          <div className="note">
+            Values above are read from Tax Profile. Toggle off to edit manually.
+          </div>
+        )}
       </div>
 
       {usePortfolioData && (
@@ -175,31 +236,18 @@ export default function Analysis() {
         </>
       )}
 
-      <div className="analysis-form">
-        <label>
-          Filing Status
-          <select
-            value={filingStatus}
-            onChange={(e) => updateAnalysisSettings({ filingStatus: e.target.value as FilingStatus })}
-          >
-            {filingStatusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          Ordinary Taxable Income
+      <div className="portfolio-source-toggle">
+        <label className="checkbox-field">
           <input
-            type="number"
-            value={ordinaryIncome}
-            onChange={(e) => updateAnalysisSettings({ ordinaryIncome: Number(e.target.value) })}
-            min={0}
+            type="checkbox"
+            checked={usePortfolioData}
+            onChange={(e) => updateAnalysisSettings({ usePortfolioData: e.target.checked })}
           />
+          Use Portfolio Totals
         </label>
+      </div>
 
+      <div className="analysis-form">
         <label>
           Short-Term Capital Gains
           <input
@@ -220,25 +268,6 @@ export default function Analysis() {
             disabled={usePortfolioData}
             min={0}
           />
-        </label>
-
-        <label>
-          Net Investment Income
-          <input
-            type="number"
-            value={netInvestmentIncome}
-            onChange={(e) => updateAnalysisSettings({ netInvestmentIncome: Number(e.target.value) })}
-            min={0}
-          />
-        </label>
-
-        <label className="checkbox-field">
-          <input
-            type="checkbox"
-            checked={enableNIIT}
-            onChange={(e) => updateAnalysisSettings({ enableNIIT: e.target.checked })}
-          />
-          Enable NIIT
         </label>
       </div>
 

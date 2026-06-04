@@ -72,6 +72,7 @@ export default function Settings() {
       setAnalysisSettings({
         ...parsed.analysisInputs,
         filingStatus: parsed.analysisInputs.filingStatus as FilingStatus,
+        useTaxProfileValues: false,
       })
     }
     setStatusType('success')

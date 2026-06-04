@@ -45,6 +45,7 @@ export interface AnalysisSettings {
   netInvestmentIncome: number
   enableNIIT: boolean
   usePortfolioData: boolean
+  useTaxProfileValues: boolean
 }
 
 interface PortfolioContextType {
@@ -93,6 +94,7 @@ const defaultAnalysisSettings: AnalysisSettings = {
   netInvestmentIncome: 0,
   enableNIIT: false,
   usePortfolioData: false,
+  useTaxProfileValues: true,
 }
 
 export function PortfolioProvider({ children }: { children: ReactNode }) {
