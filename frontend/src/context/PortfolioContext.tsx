@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react'
 import type { ReactNode } from 'react'
-import { loadFromStorage, saveToStorage } from '../utils/storage'
+import type { FilingStatus } from '../tax-engine/types'
+import { loadFromStorage, saveToStorage, PORTFOLIO_STORAGE_KEY, TAX_PROFILE_STORAGE_KEY, ANALYSIS_STORAGE_KEY } from '../utils/storage'
 
 export interface Transaction {
   id: string
@@ -27,10 +28,34 @@ interface PortfolioSummary {
   totalSaleProceeds: number
 }
 
+export interface TaxProfile {
+  taxYear: number
+  filingStatus: string
+  state: string
+  ordinaryIncome: number
+  netInvestmentIncome: number
+  enableNIIT: boolean
+}
+
+export interface AnalysisSettings {
+  filingStatus: FilingStatus
+  ordinaryIncome: number
+  shortTermCapitalGains: number
+  longTermCapitalGains: number
+  netInvestmentIncome: number
+  enableNIIT: boolean
+  usePortfolioData: boolean
+}
+
 interface PortfolioContextType {
   transactions: Transaction[]
   calculated: CalculatedTransaction[]
   summary: PortfolioSummary
+  taxProfile: TaxProfile
+  setTaxProfile: (profile: TaxProfile) => void
+  analysisSettings: AnalysisSettings
+  setAnalysisSettings: (settings: AnalysisSettings) => void
+  setTransactions: (transactions: Transaction[]) => void
   addTransaction: () => void
   removeTransaction: (id: string) => void
   updateTransaction: (id: string, field: keyof Transaction, value: string | number) => void
@@ -51,7 +76,24 @@ function calculateTransaction(tx: Transaction): Omit<CalculatedTransaction, keyo
   return { costBasis, saleProceeds, gainLoss, holdingDays, taxClassification }
 }
 
-const PORTFOLIO_STORAGE_KEY = 'portfolioTransactions'
+const defaultTaxProfile: TaxProfile = {
+  taxYear: 2024,
+  filingStatus: 'single',
+  state: 'CA',
+  ordinaryIncome: 0,
+  netInvestmentIncome: 0,
+  enableNIIT: false,
+}
+
+const defaultAnalysisSettings: AnalysisSettings = {
+  filingStatus: 'single',
+  ordinaryIncome: 0,
+  shortTermCapitalGains: 0,
+  longTermCapitalGains: 0,
+  netInvestmentIncome: 0,
+  enableNIIT: false,
+  usePortfolioData: false,
+}
 
 export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>(() =>
@@ -68,9 +110,25 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     ]),
   )
 
+  const [taxProfile, setTaxProfile] = useState<TaxProfile>(() =>
+    loadFromStorage<TaxProfile>(TAX_PROFILE_STORAGE_KEY, defaultTaxProfile),
+  )
+
+  const [analysisSettings, setAnalysisSettings] = useState<AnalysisSettings>(() =>
+    loadFromStorage<AnalysisSettings>(ANALYSIS_STORAGE_KEY, defaultAnalysisSettings),
+  )
+
   useEffect(() => {
     saveToStorage(PORTFOLIO_STORAGE_KEY, transactions)
   }, [transactions])
+
+  useEffect(() => {
+    saveToStorage(TAX_PROFILE_STORAGE_KEY, taxProfile)
+  }, [taxProfile])
+
+  useEffect(() => {
+    saveToStorage(ANALYSIS_STORAGE_KEY, analysisSettings)
+  }, [analysisSettings])
 
   const calculated = useMemo(
     () =>
@@ -136,6 +194,11 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         transactions,
         calculated,
         summary,
+        taxProfile,
+        setTaxProfile,
+        analysisSettings,
+        setAnalysisSettings,
+        setTransactions,
         addTransaction,
         removeTransaction,
         updateTransaction,

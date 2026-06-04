@@ -1,30 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { calculateCapitalGainsNetting, calculateFederalTax } from '../tax-engine/federalTaxEngine'
 import { usePortfolio } from '../context/PortfolioContext'
-import { loadFromStorage, saveToStorage } from '../utils/storage'
 import type { FilingStatus } from '../tax-engine/types'
-
-const ANALYSIS_STORAGE_KEY = 'analysisInputs'
-
-interface AnalysisStorage {
-  filingStatus: FilingStatus
-  ordinaryIncome: number
-  shortTermCapitalGains: number
-  longTermCapitalGains: number
-  netInvestmentIncome: number
-  enableNIIT: boolean
-  usePortfolioData: boolean
-}
-
-const defaultAnalysisState: AnalysisStorage = {
-  filingStatus: 'single',
-  ordinaryIncome: 0,
-  shortTermCapitalGains: 0,
-  longTermCapitalGains: 0,
-  netInvestmentIncome: 0,
-  enableNIIT: false,
-  usePortfolioData: false,
-}
 
 const filingStatusOptions: Array<{ value: FilingStatus; label: string }> = [
   { value: 'single', label: 'Single' },
@@ -35,71 +12,56 @@ const filingStatusOptions: Array<{ value: FilingStatus; label: string }> = [
 ]
 
 export default function Analysis() {
-  const portfolio = usePortfolio()
-  const [filingStatus, setFilingStatus] = useState<FilingStatus>(() =>
-    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).filingStatus,
-  )
-  const [ordinaryIncome, setOrdinaryIncome] = useState<number>(() =>
-    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).ordinaryIncome,
-  )
-  const [shortTermCapitalGains, setShortTermCapitalGains] = useState<number>(() =>
-    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).shortTermCapitalGains,
-  )
-  const [longTermCapitalGains, setLongTermCapitalGains] = useState<number>(() =>
-    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).longTermCapitalGains,
-  )
-  const [netInvestmentIncome, setNetInvestmentIncome] = useState<number>(() =>
-    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).netInvestmentIncome,
-  )
-  const [enableNIIT, setEnableNIIT] = useState<boolean>(() =>
-    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).enableNIIT,
-  )
-  const [usePortfolioData, setUsePortfolioData] = useState<boolean>(() =>
-    loadFromStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, defaultAnalysisState).usePortfolioData,
-  )
+  const portfolioContext = usePortfolio()
+  const { analysisSettings, setAnalysisSettings, calculated: portfolioCalculated, summary: portfolioSummary } = portfolioContext
 
-  useEffect(() => {
-    saveToStorage<AnalysisStorage>(ANALYSIS_STORAGE_KEY, {
-      filingStatus,
-      ordinaryIncome,
-      shortTermCapitalGains,
-      longTermCapitalGains,
-      netInvestmentIncome,
-      enableNIIT,
-      usePortfolioData,
+  const {
+    filingStatus,
+    ordinaryIncome,
+    shortTermCapitalGains,
+    longTermCapitalGains,
+    netInvestmentIncome,
+    enableNIIT,
+    usePortfolioData,
+  } = analysisSettings
+
+  const updateAnalysisSettings = (updates: Partial<typeof analysisSettings>) => {
+    setAnalysisSettings({
+      ...analysisSettings,
+      ...updates,
     })
-  }, [filingStatus, ordinaryIncome, shortTermCapitalGains, longTermCapitalGains, netInvestmentIncome, enableNIIT, usePortfolioData])
+  }
 
   const portfolioShortTermGains = useMemo(
     () =>
-      portfolio.calculated
+      portfolioCalculated
         .filter((tx) => tx.taxClassification === 'Short-Term' && tx.gainLoss > 0)
         .reduce((sum, tx) => sum + tx.gainLoss, 0),
-    [portfolio.calculated],
+    [portfolioCalculated],
   )
 
   const portfolioShortTermLosses = useMemo(
     () =>
-      portfolio.calculated
+      portfolioCalculated
         .filter((tx) => tx.taxClassification === 'Short-Term' && tx.gainLoss < 0)
         .reduce((sum, tx) => sum + Math.abs(tx.gainLoss), 0),
-    [portfolio.calculated],
+    [portfolioCalculated],
   )
 
   const portfolioLongTermGains = useMemo(
     () =>
-      portfolio.calculated
+      portfolioCalculated
         .filter((tx) => tx.taxClassification === 'Long-Term' && tx.gainLoss > 0)
         .reduce((sum, tx) => sum + tx.gainLoss, 0),
-    [portfolio.calculated],
+    [portfolioCalculated],
   )
 
   const portfolioLongTermLosses = useMemo(
     () =>
-      portfolio.calculated
+      portfolioCalculated
         .filter((tx) => tx.taxClassification === 'Long-Term' && tx.gainLoss < 0)
         .reduce((sum, tx) => sum + Math.abs(tx.gainLoss), 0),
-    [portfolio.calculated],
+    [portfolioCalculated],
   )
 
   const portfolioNetting = useMemo(
@@ -143,7 +105,7 @@ export default function Analysis() {
           <input
             type="checkbox"
             checked={usePortfolioData}
-            onChange={(e) => setUsePortfolioData(e.target.checked)}
+            onChange={(e) => updateAnalysisSettings({ usePortfolioData: e.target.checked })}
           />
           Use Portfolio Totals
         </label>
@@ -172,7 +134,7 @@ export default function Analysis() {
               </div>
               <div className="total-item">
                 <span>Total Realized Gains/Losses:</span>
-                <strong>${portfolio.summary.totalRealizedGainLoss.toFixed(2)}</strong>
+                <strong>${portfolioSummary.totalRealizedGainLoss.toFixed(2)}</strong>
               </div>
             </div>
           </div>
@@ -216,7 +178,10 @@ export default function Analysis() {
       <div className="analysis-form">
         <label>
           Filing Status
-          <select value={filingStatus} onChange={(e) => setFilingStatus(e.target.value as FilingStatus)}>
+          <select
+            value={filingStatus}
+            onChange={(e) => updateAnalysisSettings({ filingStatus: e.target.value as FilingStatus })}
+          >
             {filingStatusOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -230,7 +195,7 @@ export default function Analysis() {
           <input
             type="number"
             value={ordinaryIncome}
-            onChange={(e) => setOrdinaryIncome(Number(e.target.value))}
+            onChange={(e) => updateAnalysisSettings({ ordinaryIncome: Number(e.target.value) })}
             min={0}
           />
         </label>
@@ -240,7 +205,7 @@ export default function Analysis() {
           <input
             type="number"
             value={finalShortTermCapitalGains}
-            onChange={(e) => !usePortfolioData && setShortTermCapitalGains(Number(e.target.value))}
+            onChange={(e) => !usePortfolioData && updateAnalysisSettings({ shortTermCapitalGains: Number(e.target.value) })}
             disabled={usePortfolioData}
             min={0}
           />
@@ -251,7 +216,7 @@ export default function Analysis() {
           <input
             type="number"
             value={finalLongTermCapitalGains}
-            onChange={(e) => !usePortfolioData && setLongTermCapitalGains(Number(e.target.value))}
+            onChange={(e) => !usePortfolioData && updateAnalysisSettings({ longTermCapitalGains: Number(e.target.value) })}
             disabled={usePortfolioData}
             min={0}
           />
@@ -262,7 +227,7 @@ export default function Analysis() {
           <input
             type="number"
             value={netInvestmentIncome}
-            onChange={(e) => setNetInvestmentIncome(Number(e.target.value))}
+            onChange={(e) => updateAnalysisSettings({ netInvestmentIncome: Number(e.target.value) })}
             min={0}
           />
         </label>
@@ -271,7 +236,7 @@ export default function Analysis() {
           <input
             type="checkbox"
             checked={enableNIIT}
-            onChange={(e) => setEnableNIIT(e.target.checked)}
+            onChange={(e) => updateAnalysisSettings({ enableNIIT: e.target.checked })}
           />
           Enable NIIT
         </label>

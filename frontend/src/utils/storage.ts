@@ -1,3 +1,7 @@
+export const PORTFOLIO_STORAGE_KEY = 'portfolioTransactions'
+export const TAX_PROFILE_STORAGE_KEY = 'taxProfile'
+export const ANALYSIS_STORAGE_KEY = 'analysisInputs'
+
 export function safeJsonParse<T>(value: string | null, fallback: T): T {
   if (value === null) {
     return fallback

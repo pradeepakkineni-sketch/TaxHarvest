@@ -1,14 +1,4 @@
-import { useState, useEffect } from 'react'
-import { loadFromStorage, saveToStorage } from '../utils/storage'
-
-export interface TaxProfile {
-  taxYear: number
-  filingStatus: string
-  state: string
-  ordinaryIncome: number
-  netInvestmentIncome: number
-  enableNIIT: boolean
-}
+import { usePortfolio, type TaxProfile } from '../context/PortfolioContext'
 
 const stateOptions = [
   { value: 'AL', label: 'Alabama' },
@@ -63,31 +53,14 @@ const stateOptions = [
   { value: 'WY', label: 'Wyoming' },
 ]
 
-const TAX_PROFILE_STORAGE_KEY = 'taxProfile'
-
-const defaultProfile: TaxProfile = {
-  taxYear: 2024,
-  filingStatus: 'single',
-  state: 'CA',
-  ordinaryIncome: 0,
-  netInvestmentIncome: 0,
-  enableNIIT: false,
-}
-
 export default function TaxProfile() {
-  const [profile, setProfile] = useState<TaxProfile>(() =>
-    loadFromStorage<TaxProfile>(TAX_PROFILE_STORAGE_KEY, defaultProfile),
-  )
-
-  useEffect(() => {
-    saveToStorage(TAX_PROFILE_STORAGE_KEY, profile)
-  }, [profile])
+  const { taxProfile, setTaxProfile } = usePortfolio()
 
   const handleChange = (field: keyof TaxProfile, value: string | number | boolean) => {
-    setProfile((current) => ({
-      ...current,
+    setTaxProfile({
+      ...taxProfile,
       [field]: value,
-    }))
+    })
   }
 
   const formatCurrencyValue = (value: number) => value.toString()
@@ -99,7 +72,7 @@ export default function TaxProfile() {
         <label>
           Tax Year
           <select
-            value={profile.taxYear}
+            value={taxProfile.taxYear}
             onChange={(e) => handleChange('taxYear', Number(e.target.value))}
           >
             <option value={2024}>2024</option>
@@ -112,7 +85,7 @@ export default function TaxProfile() {
         <label>
           Filing Status
           <select
-            value={profile.filingStatus}
+            value={taxProfile.filingStatus}
             onChange={(e) => handleChange('filingStatus', e.target.value)}
           >
             <option value="single">Single</option>
@@ -125,7 +98,7 @@ export default function TaxProfile() {
         <label>
           State
           <select
-            value={profile.state}
+            value={taxProfile.state}
             onChange={(e) => handleChange('state', e.target.value)}
           >
             {stateOptions.map((stateOption) => (
@@ -141,7 +114,7 @@ export default function TaxProfile() {
           <input
             type="number"
             inputMode="decimal"
-            value={formatCurrencyValue(profile.ordinaryIncome)}
+            value={formatCurrencyValue(taxProfile.ordinaryIncome)}
             onChange={(e) => handleChange('ordinaryIncome', Number(e.target.value))}
             placeholder="0"
           />
@@ -152,7 +125,7 @@ export default function TaxProfile() {
           <input
             type="number"
             inputMode="decimal"
-            value={formatCurrencyValue(profile.netInvestmentIncome)}
+            value={formatCurrencyValue(taxProfile.netInvestmentIncome)}
             onChange={(e) => handleChange('netInvestmentIncome', Number(e.target.value))}
             placeholder="0"
           />
@@ -161,7 +134,7 @@ export default function TaxProfile() {
         <label className="checkbox-field">
           <input
             type="checkbox"
-            checked={profile.enableNIIT}
+            checked={taxProfile.enableNIIT}
             onChange={(e) => handleChange('enableNIIT', e.target.checked)}
           />
           Enable NIIT
@@ -170,7 +143,7 @@ export default function TaxProfile() {
 
       <div className="json-preview">
         <h3>Current Profile</h3>
-        <pre>{JSON.stringify(profile, null, 2)}</pre>
+        <pre>{JSON.stringify(taxProfile, null, 2)}</pre>
       </div>
     </section>
   )
