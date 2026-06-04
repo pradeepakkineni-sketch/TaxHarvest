@@ -8,45 +8,50 @@ const LONG_TERM_RATE = 0.15
 export default function TaxLossHarvesting() {
   const portfolio = usePortfolio()
 
+  const washSaleResults = useMemo(() => detectWashSales(portfolio.calculated), [portfolio.calculated])
+
   const harvestableLots = useMemo(() => {
+    const washSaleLossIds = new Set(washSaleResults.warnings.map((warning) => warning.lossTransactionId))
+
     return portfolio.calculated
       .filter((tx) => tx.gainLoss < 0)
       .map((tx) => {
         const loss = Math.abs(tx.gainLoss)
+        const potentiallyDisallowedLoss = washSaleLossIds.has(tx.id) ? loss : 0
+        const eligibleLoss = loss - potentiallyDisallowedLoss
         const estimatedBenefit =
-          tx.taxClassification === 'Short-Term'
-            ? loss * SHORT_TERM_RATE
-            : loss * LONG_TERM_RATE
+          eligibleLoss > 0
+            ? eligibleLoss * (tx.taxClassification === 'Short-Term' ? SHORT_TERM_RATE : LONG_TERM_RATE)
+            : 0
+
         return {
           ...tx,
           loss,
+          potentiallyDisallowedLoss,
+          eligibleLoss,
           estimatedBenefit,
+          isWashSale: potentiallyDisallowedLoss > 0,
         }
       })
-  }, [portfolio.calculated])
-
-  const washSaleResults = useMemo(() => detectWashSales(portfolio.calculated), [portfolio.calculated])
+  }, [portfolio.calculated, washSaleResults.warnings])
 
   const summary = useMemo(() => {
-    let totalHarvestable = 0
-    let stHarvestable = 0
-    let ltHarvestable = 0
+    let totalGrossHarvestable = 0
+    let totalPotentiallyDisallowed = 0
+    let totalEligibleHarvestable = 0
     let totalBenefit = 0
 
     harvestableLots.forEach((lot) => {
-      totalHarvestable += lot.loss
+      totalGrossHarvestable += lot.loss
+      totalPotentiallyDisallowed += lot.potentiallyDisallowedLoss
+      totalEligibleHarvestable += lot.eligibleLoss
       totalBenefit += lot.estimatedBenefit
-      if (lot.taxClassification === 'Short-Term') {
-        stHarvestable += lot.loss
-      } else {
-        ltHarvestable += lot.loss
-      }
     })
 
     return {
-      totalHarvestable,
-      stHarvestable,
-      ltHarvestable,
+      totalGrossHarvestable,
+      totalPotentiallyDisallowed,
+      totalEligibleHarvestable,
       totalBenefit,
     }
   }, [harvestableLots])
@@ -57,16 +62,16 @@ export default function TaxLossHarvesting() {
 
       <div className="summary-cards">
         <div className="summary-card">
-          <h3>Total Harvestable Losses</h3>
-          <div className="amount">${summary.totalHarvestable.toFixed(2)}</div>
+          <h3>Gross Harvestable Losses</h3>
+          <div className="amount">${summary.totalGrossHarvestable.toFixed(2)}</div>
         </div>
         <div className="summary-card">
-          <h3>Short-Term Harvestable Losses</h3>
-          <div className="amount">${summary.stHarvestable.toFixed(2)}</div>
+          <h3>Potentially Disallowed Wash Sale Losses</h3>
+          <div className="amount">${summary.totalPotentiallyDisallowed.toFixed(2)}</div>
         </div>
         <div className="summary-card">
-          <h3>Long-Term Harvestable Losses</h3>
-          <div className="amount">${summary.ltHarvestable.toFixed(2)}</div>
+          <h3>Eligible Harvestable Losses</h3>
+          <div className="amount">${summary.totalEligibleHarvestable.toFixed(2)}</div>
         </div>
         <div className="summary-card">
           <h3>Estimated Federal Tax Benefit</h3>
@@ -115,7 +120,7 @@ export default function TaxLossHarvesting() {
           <p className="note">
             Estimated tax benefit calculated at 24% for short-term losses and 15% for long-term losses.
             <br />
-            Does not include wash sale detection or state tax.
+            Wash sale losses are treated as potentially disallowed for planning purposes. This version does not yet adjust replacement-lot cost basis.
           </p>
           <table className="harvestable-lots">
             <thead>
@@ -124,9 +129,11 @@ export default function TaxLossHarvesting() {
                 <th>Shares</th>
                 <th>Buy Date</th>
                 <th>Sell Date</th>
-                <th>Loss</th>
                 <th>Tax Classification</th>
-                <th>Estimated Tax Benefit (24%/15%)</th>
+                <th>Gross Loss</th>
+                <th>Potentially Disallowed Loss</th>
+                <th>Eligible Loss</th>
+                <th>Estimated Tax Benefit</th>
               </tr>
             </thead>
             <tbody>
@@ -136,12 +143,14 @@ export default function TaxLossHarvesting() {
                   <td className="shares">{lot.shares.toFixed(2)}</td>
                   <td className="date">{lot.buyDate || '—'}</td>
                   <td className="date">{lot.sellDate || '—'}</td>
-                  <td className="loss">-${lot.loss.toFixed(2)}</td>
                   <td className="classification">
                     <span className={`badge ${lot.taxClassification.toLowerCase()}`}>
                       {lot.taxClassification}
                     </span>
                   </td>
+                  <td className="loss">-${lot.loss.toFixed(2)}</td>
+                  <td className="loss">-${lot.potentiallyDisallowedLoss.toFixed(2)}</td>
+                  <td className="loss">-${lot.eligibleLoss.toFixed(2)}</td>
                   <td className="benefit">${lot.estimatedBenefit.toFixed(2)}</td>
                 </tr>
               ))}

@@ -70,9 +70,12 @@ export default function Portfolio() {
                           onChange={(e) => updateTransaction(tx.id, 'ticker', e.target.value)}
                         />
                         {warning && (
-                          <span className="wash-sale-indicator" title="Potential wash sale detected">
-                            ⚠️
-                          </span>
+                          <>
+                            <span className="wash-sale-indicator" title="Potential wash sale detected">
+                              ⚠️
+                            </span>
+                            <span className="wash-sale-row-label">Potentially disallowed loss</span>
+                          </>
                         )}
                       </div>
                     </td>

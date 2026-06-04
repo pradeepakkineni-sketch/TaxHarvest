@@ -121,6 +121,14 @@
   font-size: 0.95rem;
 }
 
+.wash-sale-row-label {
+  margin-left: 6px;
+  color: #9a1f1f;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .wash-sale-warning-row td {
   border-top: 0;
   padding: 0;
