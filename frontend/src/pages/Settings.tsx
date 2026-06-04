@@ -3,6 +3,7 @@ import { usePortfolio, type Transaction } from '../context/PortfolioContext'
 import { buildPortfolioExportData, restorePortfolioFileData, validatePortfolioFileData } from '../utils/portfolioFile'
 import { parseRobinhoodCsv, type RobinhoodCsvPreviewRow } from '../importers/robinhoodCsvImporter'
 import { downloadExcelReport } from '../utils/excelExport'
+import { clearTaxHarvestStorage } from '../utils/storage'
 import type { FilingStatus } from '../tax-engine/types'
 
 export default function Settings() {
@@ -130,6 +131,19 @@ export default function Settings() {
     setStatusMessage(`Imported ${importedTransactions.length} Robinhood transaction(s).`)
   }
 
+  const handleResetLocalData = () => {
+    const confirmed = window.confirm(
+      'This will clear all TaxHarvest data stored in this browser. This only clears data stored in this browser. Downloaded portfolio files are not affected. Do you want to continue?',
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    clearTaxHarvestStorage()
+    window.location.reload()
+  }
+
   return (
     <section>
       <h2>Settings</h2>
@@ -226,6 +240,15 @@ export default function Settings() {
             </div>
           </div>
         )}
+
+        <div className="settings-row">
+          <button onClick={handleResetLocalData} className="btn-danger">
+            Reset Local Data
+          </button>
+        </div>
+        <div className="settings-row warning-text">
+          This only clears data stored in this browser. Downloaded portfolio files are not affected.
+        </div>
 
         {statusMessage && (
           <div className={`status-message ${statusType}`}>{statusMessage}</div>

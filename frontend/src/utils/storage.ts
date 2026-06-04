@@ -1,6 +1,7 @@
 export const PORTFOLIO_STORAGE_KEY = 'portfolioTransactions'
 export const TAX_PROFILE_STORAGE_KEY = 'taxProfile'
 export const ANALYSIS_STORAGE_KEY = 'analysisInputs'
+export const SCENARIOS_STORAGE_KEY = 'scenarios'
 
 export function safeJsonParse<T>(value: string | null, fallback: T): T {
   if (value === null) {
@@ -49,4 +50,25 @@ export function saveToStorage<T>(key: string, value: T) {
   } catch {
     // Ignore storage failures
   }
+}
+
+export function clearTaxHarvestStorage() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const keys = [
+    PORTFOLIO_STORAGE_KEY,
+    TAX_PROFILE_STORAGE_KEY,
+    ANALYSIS_STORAGE_KEY,
+    SCENARIOS_STORAGE_KEY,
+  ]
+
+  keys.forEach((key) => {
+    try {
+      window.localStorage.removeItem(key)
+    } catch {
+      // Ignore failures
+    }
+  })
 }
