@@ -74,24 +74,37 @@ export default function TaxLossHarvesting() {
         </div>
       </div>
 
-      {washSaleResults.totalWarnings > 0 && (
-        <div className="portfolio-summary">
-          <h3>Wash Sale Warnings</h3>
-          <div className="portfolio-totals">
-            {washSaleResults.warnings.map((warning) => (
-              <div key={`${warning.lossTransactionId}-${warning.replacementTransactionId}`} className="total-item wash-sale-warning-item">
-                <span>{warning.message}</span>
-              </div>
-            ))}
+      <div className="portfolio-summary">
+        <h3>Wash Sale Warnings</h3>
+        {washSaleResults.totalWarnings === 0 ? (
+          <div className="empty-state">
+            <p>No potential wash sales detected.</p>
           </div>
-        </div>
-      )}
-
-      {washSaleResults.totalWarnings === 0 && (
-        <div className="empty-state">
-          <p>No potential wash sales detected.</p>
-        </div>
-      )}
+        ) : (
+          <table className="wash-sale-warnings">
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Loss Amount</th>
+                <th>Sale Date</th>
+                <th>Replacement Purchase Date</th>
+                <th>Explanation</th>
+              </tr>
+            </thead>
+            <tbody>
+              {washSaleResults.warnings.map((warning) => (
+                <tr key={`${warning.lossTransactionId}-${warning.replacementTransactionId}`}>
+                  <td>{warning.ticker}</td>
+                  <td>${warning.lossAmount.toFixed(2)}</td>
+                  <td>{warning.saleDate}</td>
+                  <td>{warning.replacementPurchaseDate}</td>
+                  <td>{warning.message}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       {harvestableLots.length === 0 ? (
         <div className="empty-state">

@@ -121,11 +121,43 @@
   font-size: 0.95rem;
 }
 
-.wash-sale-warning-item span {
-  display: block;
-  color: #9a1f1f;
+.wash-sale-warning-row td {
+  border-top: 0;
+  padding: 0;
+}
+
+.wash-sale-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+  color: #856404;
   font-size: 0.95rem;
-  line-height: 1.4;
+}
+
+.wash-sale-banner span:last-child {
+  display: inline-block;
+}
+
+.wash-sale-warnings {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.wash-sale-warnings th,
+.wash-sale-warnings td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.wash-sale-warnings th {
+  background: var(--accent-bg);
+  font-weight: 600;
 }
 
 .ticker-input-row {
