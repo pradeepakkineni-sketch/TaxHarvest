@@ -4,11 +4,16 @@ import type {
   CapitalGainLossNettingResult,
   FederalTaxInput,
   FederalTaxResult,
+  FilingStatus,
   LtcgAllocation,
   TaxBracket,
 } from './types'
 
-function calculateProgressiveTax(amount: number, brackets: TaxBracket[]) {
+function calculateProgressiveTax(amount: number, brackets: TaxBracket[] | null | undefined) {
+  if (!Array.isArray(brackets)) {
+    return { tax: 0, breakdown: [] }
+  }
+
   const ordered = [...brackets].sort((a, b) => a.threshold - b.threshold)
   let remaining = amount
   let totalTax = 0
@@ -33,9 +38,9 @@ function calculateProgressiveTax(amount: number, brackets: TaxBracket[]) {
 function allocateLongTermCapitalGains(
   baseIncome: number,
   ltcg: number,
-  brackets: TaxBracket[],
+  brackets: TaxBracket[] | null | undefined,
 ): LtcgAllocation {
-  const ordered = [...brackets].sort((a, b) => a.threshold - b.threshold)
+  const ordered = Array.isArray(brackets) ? [...brackets].sort((a, b) => a.threshold - b.threshold) : []
   let remainingLtcg = ltcg
   let allocated: LtcgAllocation = { zeroPercent: 0, fifteenPercent: 0, twentyPercent: 0 }
 
@@ -137,6 +142,36 @@ export function calculateCapitalGainsNetting(
   }
 }
 
+const filingStatusMap: Record<string, FilingStatus> = {
+  single: 'single',
+  'Single': 'single',
+  'marriedFilingJointly': 'marriedFilingJointly',
+  'Married Filing Jointly': 'marriedFilingJointly',
+  'marriedfilingjointly': 'marriedFilingJointly',
+  'married filing jointly': 'marriedFilingJointly',
+  marriedFilingSeparately: 'marriedFilingSeparately',
+  'Married Filing Separately': 'marriedFilingSeparately',
+  'marriedfilingseparately': 'marriedFilingSeparately',
+  'married filing separately': 'marriedFilingSeparately',
+  headOfHousehold: 'headOfHousehold',
+  'Head of Household': 'headOfHousehold',
+  'headofhousehold': 'headOfHousehold',
+  'head of household': 'headOfHousehold',
+  qualifyingSurvivingSpouse: 'qualifyingSurvivingSpouse',
+  'Qualifying Surviving Spouse': 'qualifyingSurvivingSpouse',
+  'qualifyingsurvivingspouse': 'qualifyingSurvivingSpouse',
+  'qualifying surviving spouse': 'qualifyingSurvivingSpouse',
+}
+
+export function normalizeFilingStatus(status: string | null | undefined): FilingStatus {
+  if (!status) {
+    return 'single'
+  }
+
+  const trimmed = status.toString().trim()
+  return filingStatusMap[trimmed] ?? filingStatusMap[trimmed.toLowerCase()] ?? 'single'
+}
+
 export function calculateFederalTax(input: FederalTaxInput): FederalTaxResult {
   const {
     filingStatus,
@@ -148,9 +183,10 @@ export function calculateFederalTax(input: FederalTaxInput): FederalTaxResult {
     enableNIIT = false,
   } = input
 
-  const ordinaryBrackets = federalTaxTables2025.ordinaryBrackets[filingStatus]
-  const ltcgBrackets = federalTaxTables2025.ltcgBrackets[filingStatus]
-  const niitThreshold = federalTaxTables2025.niitThresholds[filingStatus]
+  const normalizedStatus = normalizeFilingStatus(filingStatus as string)
+  const ordinaryBrackets = federalTaxTables2025.ordinaryBrackets[normalizedStatus] ?? []
+  const ltcgBrackets = federalTaxTables2025.ltcgBrackets[normalizedStatus] ?? []
+  const niitThreshold = federalTaxTables2025.niitThresholds[normalizedStatus] ?? 0
 
   const taxableOrdinaryIncome = Math.max(0, ordinaryIncome + shortTermCapitalGains)
   const ordinaryTaxResult = calculateProgressiveTax(taxableOrdinaryIncome, ordinaryBrackets)
@@ -169,7 +205,7 @@ export function calculateFederalTax(input: FederalTaxInput): FederalTaxResult {
     : 0
 
   return {
-    filingStatus,
+    filingStatus: normalizedStatus,
     taxYear,
     taxableOrdinaryIncome,
     ordinaryTax: ordinaryTaxResult.tax,

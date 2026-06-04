@@ -20,7 +20,23 @@ export function loadFromStorage<T>(key: string, fallback: T): T {
   }
 
   const raw = window.localStorage.getItem(key)
-  return safeJsonParse(raw, fallback)
+  const parsed = safeJsonParse<unknown>(raw, fallback)
+  if (parsed === null) {
+    return fallback
+  }
+
+  if (Array.isArray(fallback)) {
+    return (Array.isArray(parsed) ? (parsed as T) : fallback) as T
+  }
+
+  if (typeof fallback === 'object' && fallback !== null) {
+    return {
+      ...fallback,
+      ...(typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed : {}),
+    } as T
+  }
+
+  return (parsed as T) ?? fallback
 }
 
 export function saveToStorage<T>(key: string, value: T) {

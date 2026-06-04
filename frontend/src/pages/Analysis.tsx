@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { calculateCapitalGainsNetting, calculateFederalTax } from '../tax-engine/federalTaxEngine'
-import { usePortfolio } from '../context/PortfolioContext'
+import { calculateCapitalGainsNetting, calculateFederalTax, normalizeFilingStatus } from '../tax-engine/federalTaxEngine'
+import { usePortfolio, defaultAnalysisSettings, defaultTaxProfile } from '../context/PortfolioContext'
 import type { FilingStatus } from '../tax-engine/types'
 
 const filingStatusOptions: Array<{ value: FilingStatus; label: string }> = [
@@ -13,7 +13,16 @@ const filingStatusOptions: Array<{ value: FilingStatus; label: string }> = [
 
 export default function Analysis() {
   const portfolioContext = usePortfolio()
-  const { analysisSettings, setAnalysisSettings, calculated: portfolioCalculated, summary: portfolioSummary, taxProfile } = portfolioContext
+  const analysisSettings = { ...defaultAnalysisSettings, ...(portfolioContext.analysisSettings ?? {}) }
+  const taxProfile = { ...defaultTaxProfile, ...(portfolioContext.taxProfile ?? {}) }
+  const portfolioCalculated = Array.isArray(portfolioContext.calculated) ? portfolioContext.calculated : []
+  const portfolioSummary = portfolioContext.summary ?? {
+    totalShortTermGainLoss: 0,
+    totalLongTermGainLoss: 0,
+    totalRealizedGainLoss: 0,
+    totalSaleProceeds: 0,
+  }
+  const { setAnalysisSettings } = portfolioContext
 
   const {
     filingStatus,
@@ -33,40 +42,43 @@ export default function Analysis() {
     })
   }
 
-  const sourceFilingStatus = useTaxProfileValues ? (taxProfile.filingStatus as FilingStatus) : filingStatus
-  const sourceOrdinaryIncome = useTaxProfileValues ? taxProfile.ordinaryIncome : ordinaryIncome
-  const sourceNetInvestmentIncome = useTaxProfileValues ? taxProfile.netInvestmentIncome : netInvestmentIncome
-  const sourceEnableNIIT = useTaxProfileValues ? taxProfile.enableNIIT : enableNIIT
+  const sourceFilingStatus = useTaxProfileValues
+    ? ((taxProfile.filingStatus as FilingStatus) || defaultAnalysisSettings.filingStatus)
+    : filingStatus || defaultAnalysisSettings.filingStatus
+  const normalizedFilingStatus = normalizeFilingStatus(sourceFilingStatus as string)
+  const sourceOrdinaryIncome = useTaxProfileValues ? taxProfile.ordinaryIncome ?? 0 : ordinaryIncome ?? 0
+  const sourceNetInvestmentIncome = useTaxProfileValues ? taxProfile.netInvestmentIncome ?? 0 : netInvestmentIncome ?? 0
+  const sourceEnableNIIT = useTaxProfileValues ? taxProfile.enableNIIT ?? false : enableNIIT ?? false
 
   const portfolioShortTermGains = useMemo(
     () =>
       portfolioCalculated
-        .filter((tx) => tx.taxClassification === 'Short-Term' && tx.gainLoss > 0)
-        .reduce((sum, tx) => sum + tx.gainLoss, 0),
+        .filter((tx) => tx?.taxClassification === 'Short-Term' && tx?.gainLoss > 0)
+        .reduce((sum, tx) => sum + (tx?.gainLoss ?? 0), 0),
     [portfolioCalculated],
   )
 
   const portfolioShortTermLosses = useMemo(
     () =>
       portfolioCalculated
-        .filter((tx) => tx.taxClassification === 'Short-Term' && tx.gainLoss < 0)
-        .reduce((sum, tx) => sum + Math.abs(tx.gainLoss), 0),
+        .filter((tx) => tx?.taxClassification === 'Short-Term' && tx?.gainLoss < 0)
+        .reduce((sum, tx) => sum + Math.abs(tx?.gainLoss ?? 0), 0),
     [portfolioCalculated],
   )
 
   const portfolioLongTermGains = useMemo(
     () =>
       portfolioCalculated
-        .filter((tx) => tx.taxClassification === 'Long-Term' && tx.gainLoss > 0)
-        .reduce((sum, tx) => sum + tx.gainLoss, 0),
+        .filter((tx) => tx?.taxClassification === 'Long-Term' && tx?.gainLoss > 0)
+        .reduce((sum, tx) => sum + (tx?.gainLoss ?? 0), 0),
     [portfolioCalculated],
   )
 
   const portfolioLongTermLosses = useMemo(
     () =>
       portfolioCalculated
-        .filter((tx) => tx.taxClassification === 'Long-Term' && tx.gainLoss < 0)
-        .reduce((sum, tx) => sum + Math.abs(tx.gainLoss), 0),
+        .filter((tx) => tx?.taxClassification === 'Long-Term' && tx?.gainLoss < 0)
+        .reduce((sum, tx) => sum + Math.abs(tx?.gainLoss ?? 0), 0),
     [portfolioCalculated],
   )
 
@@ -88,19 +100,41 @@ export default function Analysis() {
     ? portfolioNetting.finalLongTermTaxableGain
     : longTermCapitalGains
 
-  const result = useMemo(
-    () =>
-      calculateFederalTax({
-        filingStatus: sourceFilingStatus,
-        taxYear: 2025,
-        ordinaryIncome: sourceOrdinaryIncome,
-        shortTermCapitalGains: finalShortTermCapitalGains,
-        longTermCapitalGains: finalLongTermCapitalGains,
-        netInvestmentIncome: sourceNetInvestmentIncome,
-        enableNIIT: sourceEnableNIIT,
-      }),
-    [sourceFilingStatus, sourceOrdinaryIncome, finalShortTermCapitalGains, finalLongTermCapitalGains, sourceNetInvestmentIncome, sourceEnableNIIT],
-  )
+  const calculationState = useMemo(() => {
+    try {
+      return {
+        result: calculateFederalTax({
+          filingStatus: normalizedFilingStatus,
+          taxYear: 2025,
+          ordinaryIncome: sourceOrdinaryIncome,
+          shortTermCapitalGains: finalShortTermCapitalGains,
+          longTermCapitalGains: finalLongTermCapitalGains,
+          netInvestmentIncome: sourceNetInvestmentIncome,
+          enableNIIT: sourceEnableNIIT,
+        }),
+        error: false,
+      }
+    } catch (error) {
+      return {
+        result: {
+          filingStatus: normalizedFilingStatus,
+          taxYear: 2025,
+          taxableOrdinaryIncome: 0,
+          ordinaryTax: 0,
+          ltcgAllocation: { zeroPercent: 0, fifteenPercent: 0, twentyPercent: 0 },
+          ltcgTax: 0,
+          totalFederalTax: 0,
+          niitAmount: 0,
+          niitThreshold: 0,
+          detailed: { ordinaryTaxBrackets: [], ltcgBreakdown: [] },
+        },
+        error: true,
+      }
+    }
+  }, [normalizedFilingStatus, sourceOrdinaryIncome, finalShortTermCapitalGains, finalLongTermCapitalGains, sourceNetInvestmentIncome, sourceEnableNIIT])
+
+  const result = calculationState.result
+  const resultError = calculationState.error
 
   return (
     <section>
@@ -118,6 +152,11 @@ export default function Analysis() {
       </div>
 
       <div className="analysis-form">
+        {resultError && (
+          <div className="note note-error">
+            Tax calculation fallback active: filings status normalized and values are rendered safely.
+          </div>
+        )}
         <label>
           Filing Status
           <select

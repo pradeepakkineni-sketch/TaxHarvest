@@ -8,6 +8,7 @@ import Analysis from './pages/Analysis'
 import TaxLossHarvesting from './pages/TaxLossHarvesting'
 import Scenarios from './pages/Scenarios'
 import WaitForLTCG from './pages/WaitForLTCG'
+import CashOptimizer from './pages/CashOptimizer'
 import Settings from './pages/Settings'
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="harvesting" element={<TaxLossHarvesting />} />
             <Route path="scenarios" element={<Scenarios />} />
             <Route path="wait-for-ltcg" element={<WaitForLTCG />} />
+            <Route path="cash-optimizer" element={<CashOptimizer />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

@@ -13,6 +13,7 @@ export default function Sidebar() {
         <NavLink to="/harvesting" className="nav-item">Harvesting</NavLink>
         <NavLink to="/scenarios" className="nav-item">Scenarios</NavLink>
         <NavLink to="/wait-for-ltcg" className="nav-item">Wait for LTCG</NavLink>
+        <NavLink to="/cash-optimizer" className="nav-item">Cash Optimizer</NavLink>
         <NavLink to="/settings" className="nav-item">Settings</NavLink>
       </nav>
       <div className="sb-footer">v0.1 • Placeholder</div>

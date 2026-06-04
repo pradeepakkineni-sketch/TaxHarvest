@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
-import { usePortfolio } from '../context/PortfolioContext'
+import { usePortfolio, defaultAnalysisSettings, defaultTaxProfile } from '../context/PortfolioContext'
 import type { FilingStatus } from '../tax-engine/types'
-import { calculateCapitalGainsNetting, calculateFederalTax } from '../tax-engine/federalTaxEngine'
+import { calculateCapitalGainsNetting, calculateFederalTax, normalizeFilingStatus } from '../tax-engine/federalTaxEngine'
 import { detectWashSales } from '../tax-engine/washSale'
 
 const SHORT_TERM_RATE = 0.24
@@ -9,7 +9,17 @@ const LONG_TERM_RATE = 0.15
 
 export default function Dashboard() {
   const portfolio = usePortfolio()
-  const { calculated, summary, analysisSettings, taxProfile } = portfolio
+  const { calculated: rawCalculated, summary: rawSummary, analysisSettings: rawAnalysisSettings, taxProfile: rawTaxProfile } = portfolio
+
+  const calculated = Array.isArray(rawCalculated) ? rawCalculated : []
+  const summary = rawSummary ?? {
+    totalShortTermGainLoss: 0,
+    totalLongTermGainLoss: 0,
+    totalRealizedGainLoss: 0,
+    totalSaleProceeds: 0,
+  }
+  const analysisSettings = { ...defaultAnalysisSettings, ...(rawAnalysisSettings ?? {}) }
+  const taxProfile = { ...defaultTaxProfile, ...(rawTaxProfile ?? {}) }
 
   const washSaleResults = useMemo(() => detectWashSales(calculated), [calculated])
   const washSaleWarningsCount = washSaleResults.totalWarnings
@@ -67,27 +77,59 @@ export default function Dashboard() {
     ? portfolioNetting.finalLongTermTaxableGain
     : analysisSettings.longTermCapitalGains
 
-  const analysisResult = useMemo(
-    () =>
-      calculateFederalTax({
-        filingStatus: analysisSettings.useTaxProfileValues
-          ? (taxProfile.filingStatus as FilingStatus)
-          : analysisSettings.filingStatus,
-        taxYear: taxProfile.taxYear,
-        ordinaryIncome: analysisSettings.useTaxProfileValues
-          ? taxProfile.ordinaryIncome
-          : analysisSettings.ordinaryIncome,
-        shortTermCapitalGains: finalShortTermCapitalGains,
-        longTermCapitalGains: finalLongTermCapitalGains,
-        netInvestmentIncome: analysisSettings.useTaxProfileValues
-          ? taxProfile.netInvestmentIncome
-          : analysisSettings.netInvestmentIncome,
-        enableNIIT: analysisSettings.useTaxProfileValues
-          ? taxProfile.enableNIIT
-          : analysisSettings.enableNIIT,
-      }),
-    [analysisSettings, taxProfile, finalShortTermCapitalGains, finalLongTermCapitalGains],
-  )
+  const sourceFilingStatus = analysisSettings.useTaxProfileValues
+    ? ((taxProfile.filingStatus as FilingStatus) || defaultAnalysisSettings.filingStatus)
+    : analysisSettings.filingStatus || defaultAnalysisSettings.filingStatus
+
+  const sourceOrdinaryIncome = analysisSettings.useTaxProfileValues
+    ? taxProfile.ordinaryIncome
+    : analysisSettings.ordinaryIncome
+
+  const sourceNetInvestmentIncome = analysisSettings.useTaxProfileValues
+    ? taxProfile.netInvestmentIncome
+    : analysisSettings.netInvestmentIncome
+
+  const sourceEnableNIIT = analysisSettings.useTaxProfileValues
+    ? taxProfile.enableNIIT
+    : analysisSettings.enableNIIT
+
+  const normalizedFilingStatus = normalizeFilingStatus(sourceFilingStatus as string)
+
+  const analysisState = useMemo(() => {
+    try {
+      return {
+        result: calculateFederalTax({
+          filingStatus: normalizedFilingStatus,
+          taxYear: taxProfile.taxYear || 2025,
+          ordinaryIncome: sourceOrdinaryIncome ?? 0,
+          shortTermCapitalGains: finalShortTermCapitalGains ?? 0,
+          longTermCapitalGains: finalLongTermCapitalGains ?? 0,
+          netInvestmentIncome: sourceNetInvestmentIncome ?? 0,
+          enableNIIT: sourceEnableNIIT ?? false,
+        }),
+        error: false,
+      }
+    } catch (error) {
+      return {
+        result: {
+          filingStatus: normalizedFilingStatus,
+          taxYear: taxProfile.taxYear || 2025,
+          taxableOrdinaryIncome: 0,
+          ordinaryTax: 0,
+          ltcgAllocation: { zeroPercent: 0, fifteenPercent: 0, twentyPercent: 0 },
+          ltcgTax: 0,
+          totalFederalTax: 0,
+          niitAmount: 0,
+          niitThreshold: 0,
+          detailed: { ordinaryTaxBrackets: [], ltcgBreakdown: [] },
+        },
+        error: true,
+      }
+    }
+  }, [normalizedFilingStatus, taxProfile.taxYear, sourceOrdinaryIncome, finalShortTermCapitalGains, finalLongTermCapitalGains, sourceNetInvestmentIncome, sourceEnableNIIT])
+
+  const analysisResult = analysisState.result
+  const analysisError = analysisState.error
 
   const hasTransactions = computedTransactionsExist(calculated)
   const taxProfileIncomplete = !taxProfile.filingStatus || !taxProfile.state
@@ -97,6 +139,12 @@ export default function Dashboard() {
       <h2>Dashboard</h2>
 
       <div className="cards">
+        {analysisError && (
+          <div className="card card-error">
+            <h3>Tax calculation unavailable</h3>
+            <div className="big">Using safe fallback values</div>
+          </div>
+        )}
         <div className="card">
           <h3>Total Sale Proceeds</h3>
           <div className="big">${summary.totalSaleProceeds.toFixed(2)}</div>

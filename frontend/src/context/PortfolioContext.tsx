@@ -77,7 +77,7 @@ function calculateTransaction(tx: Transaction): Omit<CalculatedTransaction, keyo
   return { costBasis, saleProceeds, gainLoss, holdingDays, taxClassification }
 }
 
-const defaultTaxProfile: TaxProfile = {
+export const defaultTaxProfile: TaxProfile = {
   taxYear: 2024,
   filingStatus: 'single',
   state: 'CA',
@@ -86,7 +86,7 @@ const defaultTaxProfile: TaxProfile = {
   enableNIIT: false,
 }
 
-const defaultAnalysisSettings: AnalysisSettings = {
+export const defaultAnalysisSettings: AnalysisSettings = {
   filingStatus: 'single',
   ordinaryIncome: 0,
   shortTermCapitalGains: 0,
@@ -98,27 +98,38 @@ const defaultAnalysisSettings: AnalysisSettings = {
 }
 
 export function PortfolioProvider({ children }: { children: ReactNode }) {
-  const [transactions, setTransactions] = useState<Transaction[]>(() =>
-    loadFromStorage<Transaction[]>(PORTFOLIO_STORAGE_KEY, [
-      {
-        id: '1',
-        ticker: '',
-        shares: 0,
-        buyDate: '',
-        sellDate: '',
-        buyPrice: 0,
-        sellPrice: 0,
-      },
-    ]),
-  )
+  const defaultTransaction: Transaction = {
+    id: '1',
+    ticker: '',
+    shares: 0,
+    buyDate: '',
+    sellDate: '',
+    buyPrice: 0,
+    sellPrice: 0,
+  }
 
-  const [taxProfile, setTaxProfile] = useState<TaxProfile>(() =>
-    loadFromStorage<TaxProfile>(TAX_PROFILE_STORAGE_KEY, defaultTaxProfile),
-  )
+  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    const stored = loadFromStorage<Partial<Transaction>[]>(PORTFOLIO_STORAGE_KEY, [])
+    if (!Array.isArray(stored) || stored.length === 0) {
+      return [defaultTransaction]
+    }
 
-  const [analysisSettings, setAnalysisSettings] = useState<AnalysisSettings>(() =>
-    loadFromStorage<AnalysisSettings>(ANALYSIS_STORAGE_KEY, defaultAnalysisSettings),
-  )
+    return stored.map((item, index) => ({
+      ...defaultTransaction,
+      ...(typeof item === 'object' && item !== null ? item : {}),
+      id: typeof item?.id === 'string' && item.id.trim() ? item.id : `${defaultTransaction.id}-${index}`,
+    }))
+  })
+
+  const [taxProfile, setTaxProfile] = useState<TaxProfile>(() => {
+    const loaded = loadFromStorage<Partial<TaxProfile>>(TAX_PROFILE_STORAGE_KEY, {})
+    return { ...defaultTaxProfile, ...loaded }
+  })
+
+  const [analysisSettings, setAnalysisSettings] = useState<AnalysisSettings>(() => {
+    const loaded = loadFromStorage<Partial<AnalysisSettings>>(ANALYSIS_STORAGE_KEY, {})
+    return { ...defaultAnalysisSettings, ...loaded }
+  })
 
   useEffect(() => {
     saveToStorage(PORTFOLIO_STORAGE_KEY, transactions)
