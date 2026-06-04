@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { usePortfolio } from '../context/PortfolioContext'
+import { detectWashSales } from '../tax-engine/washSale'
 
 const SHORT_TERM_RATE = 0.24
 const LONG_TERM_RATE = 0.15
@@ -23,6 +24,8 @@ export default function TaxLossHarvesting() {
         }
       })
   }, [portfolio.calculated])
+
+  const washSaleResults = useMemo(() => detectWashSales(portfolio.calculated), [portfolio.calculated])
 
   const summary = useMemo(() => {
     let totalHarvestable = 0
@@ -70,6 +73,25 @@ export default function TaxLossHarvesting() {
           <div className="amount">${summary.totalBenefit.toFixed(2)}</div>
         </div>
       </div>
+
+      {washSaleResults.totalWarnings > 0 && (
+        <div className="portfolio-summary">
+          <h3>Wash Sale Warnings</h3>
+          <div className="portfolio-totals">
+            {washSaleResults.warnings.map((warning) => (
+              <div key={`${warning.lossTransactionId}-${warning.replacementTransactionId}`} className="total-item wash-sale-warning-item">
+                <span>{warning.message}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {washSaleResults.totalWarnings === 0 && (
+        <div className="empty-state">
+          <p>No potential wash sales detected.</p>
+        </div>
+      )}
 
       {harvestableLots.length === 0 ? (
         <div className="empty-state">

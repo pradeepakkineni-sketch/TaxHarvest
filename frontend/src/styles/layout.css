@@ -115,6 +115,25 @@
 
 .badge.long-term { background: #efe; color: #363; }
 
+.wash-sale-indicator {
+  margin-left: 8px;
+  color: #c33;
+  font-size: 0.95rem;
+}
+
+.wash-sale-warning-item span {
+  display: block;
+  color: #9a1f1f;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.ticker-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .portfolio-source-toggle { margin-bottom: 20px; }
 
 .portfolio-summary {

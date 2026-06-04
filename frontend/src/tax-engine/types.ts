@@ -38,6 +38,21 @@ export interface CapitalGainLossNettingResult {
   capitalLossCarryforward: number
 }
 
+export interface WashSaleWarning {
+  lossTransactionId: string
+  replacementTransactionId: string
+  ticker: string
+  lossAmount: number
+  saleDate: string
+  replacementPurchaseDate: string
+  message: string
+}
+
+export interface WashSaleDetectionResult {
+  totalWarnings: number
+  warnings: WashSaleWarning[]
+}
+
 export interface LtcgAllocation {
   zeroPercent: number
   fifteenPercent: number

@@ -1,7 +1,15 @@
+import { useMemo } from 'react'
 import { usePortfolio } from '../context/PortfolioContext'
+import { detectWashSales } from '../tax-engine/washSale'
 
 export default function Portfolio() {
   const { calculated, summary, addTransaction, removeTransaction, updateTransaction } = usePortfolio()
+
+  const washSaleWarnings = useMemo(() => detectWashSales(calculated), [calculated])
+  const washSaleTransactionIds = useMemo(
+    () => new Set(washSaleWarnings.warnings.map((warning) => warning.lossTransactionId)),
+    [washSaleWarnings],
+  )
 
   return (
     <section>
@@ -48,12 +56,19 @@ export default function Portfolio() {
             {calculated.map((tx) => (
               <tr key={tx.id}>
                 <td>
-                  <input
-                    type="text"
-                    placeholder="AAPL"
-                    value={tx.ticker}
-                    onChange={(e) => updateTransaction(tx.id, 'ticker', e.target.value)}
-                  />
+                  <div className="ticker-input-row">
+                    <input
+                      type="text"
+                      placeholder="AAPL"
+                      value={tx.ticker}
+                      onChange={(e) => updateTransaction(tx.id, 'ticker', e.target.value)}
+                    />
+                    {washSaleTransactionIds.has(tx.id) && (
+                      <span className="wash-sale-indicator" title="Potential wash sale detected">
+                        ⚠️
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td>
                   <input
