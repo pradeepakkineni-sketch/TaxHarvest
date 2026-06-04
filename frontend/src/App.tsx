@@ -6,6 +6,7 @@ import Portfolio from './pages/Portfolio'
 import TaxProfile from './pages/TaxProfile'
 import Analysis from './pages/Analysis'
 import TaxLossHarvesting from './pages/TaxLossHarvesting'
+import Scenarios from './pages/Scenarios'
 import Settings from './pages/Settings'
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
             <Route path="tax-profile" element={<TaxProfile />} />
             <Route path="analysis" element={<Analysis />} />
             <Route path="harvesting" element={<TaxLossHarvesting />} />
+            <Route path="scenarios" element={<Scenarios />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
