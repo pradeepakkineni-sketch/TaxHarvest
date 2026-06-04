@@ -2,10 +2,11 @@ import { useState, type ChangeEvent } from 'react'
 import { usePortfolio, type Transaction } from '../context/PortfolioContext'
 import { buildPortfolioExportData, restorePortfolioFileData, validatePortfolioFileData } from '../utils/portfolioFile'
 import { parseRobinhoodCsv, type RobinhoodCsvPreviewRow } from '../importers/robinhoodCsvImporter'
+import { downloadExcelReport } from '../utils/excelExport'
 import type { FilingStatus } from '../tax-engine/types'
 
 export default function Settings() {
-  const { transactions, setTransactions, setTaxProfile, setAnalysisSettings } = usePortfolio()
+  const { transactions, calculated, analysisSettings, setTransactions, setTaxProfile, setAnalysisSettings } = usePortfolio()
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [statusType, setStatusType] = useState<'success' | 'error' | null>(null)
   const [csvPreviewRows, setCsvPreviewRows] = useState<RobinhoodCsvPreviewRow[]>([])
@@ -30,6 +31,15 @@ export default function Settings() {
     URL.revokeObjectURL(url)
     setStatusType('success')
     setStatusMessage('Portfolio file downloaded successfully.')
+  }
+
+  const handleExportExcel = () => {
+    downloadExcelReport({
+      transactions: calculated,
+      analysisSettings,
+    })
+    setStatusType('success')
+    setStatusMessage('Excel report downloaded successfully.')
   }
 
   const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -126,6 +136,9 @@ export default function Settings() {
         <div className="settings-row">
           <button onClick={handleDownload} className="btn-primary">
             Download Portfolio File
+          </button>
+          <button onClick={handleExportExcel} className="btn-secondary">
+            Export Excel
           </button>
         </div>
         <div className="settings-row">
